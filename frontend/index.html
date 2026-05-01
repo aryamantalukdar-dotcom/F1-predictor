@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>F1 Predictor</title>
+    <link rel="stylesheet" href="/static/style.css" />
+  </head>
+  <body>
+    <header>
+      <div class="brand">
+        <span class="logo">F1</span>
+        <span class="title">Predictor</span>
+      </div>
+      <button id="refresh" class="refresh-btn" title="Refresh prediction">
+        <span class="refresh-label">Refresh</span>
+      </button>
+    </header>
+
+    <main>
+      <section id="race-banner" class="card race-banner">
+        <div class="race-banner-loading">Loading next race…</div>
+      </section>
+
+      <section class="grid-two">
+        <div id="pole-card" class="card pole-card">
+          <h2>Pole Position Prediction</h2>
+          <div class="card-loading">Predicting…</div>
+        </div>
+
+        <div id="weather-card" class="card weather-card">
+          <h2>Race-Day Weather</h2>
+          <div class="card-loading">Loading…</div>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Predicted Finishing Order</h2>
+        <p class="muted" id="model-meta"></p>
+        <div id="race-table-wrap">
+          <div class="card-loading">Predicting…</div>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>What's Driving the Prediction</h2>
+        <p id="narrative" class="narrative muted">Analyzing latest news…</p>
+        <h3>Key storylines</h3>
+        <ul id="storylines"></ul>
+      </section>
+
+      <section class="card">
+        <h2>Latest F1 News</h2>
+        <ul id="news-list"></ul>
+      </section>
+    </main>
+
+    <footer>
+      <p class="muted">
+        Live data: Jolpica/Ergast · OpenF1 · Open-Meteo · F1 news RSS · Claude
+        Opus 4.7 for news analysis. Predictions are model estimates, not
+        betting advice.
+      </p>
+    </footer>
+
+    <script src="/static/app.js"></script>
+  </body>
+</html>

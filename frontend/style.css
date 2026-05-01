@@ -1,0 +1,417 @@
+:root {
+  --bg: #0a0e1a;
+  --bg-card: #131a2b;
+  --bg-card-hover: #1a2238;
+  --border: #2a3450;
+  --text: #e6eaf3;
+  --text-dim: #8a93a8;
+  --accent: #e10600; /* F1 red */
+  --accent-soft: rgba(225, 6, 0, 0.15);
+  --good: #21c97a;
+  --bad: #ff5470;
+  --warn: #ffb84d;
+  --pole-gold: #ffcb47;
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial,
+    sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+}
+
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 32px;
+  border-bottom: 1px solid var(--border);
+  background: linear-gradient(180deg, #0a0e1a 0%, #0d1322 100%);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.logo {
+  background: var(--accent);
+  color: white;
+  font-weight: 800;
+  padding: 4px 10px;
+  border-radius: 4px;
+  letter-spacing: 1px;
+}
+
+.title {
+  font-weight: 600;
+  font-size: 1.25rem;
+  letter-spacing: 0.5px;
+}
+
+.refresh-btn {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 16px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-size: 0.875rem;
+}
+
+.refresh-btn:hover {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+main {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 24px;
+}
+
+.card h2 {
+  margin: 0 0 16px 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  color: var(--text);
+}
+
+.card h3 {
+  margin: 16px 0 8px 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-dim);
+}
+
+.muted {
+  color: var(--text-dim);
+  font-size: 0.875rem;
+}
+
+.card-loading,
+.race-banner-loading {
+  color: var(--text-dim);
+  padding: 16px 0;
+  font-style: italic;
+}
+
+/* Race banner */
+.race-banner {
+  background: linear-gradient(135deg, #131a2b 0%, #1d1428 100%);
+  border-color: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.race-banner .race-name {
+  font-size: 1.6rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.race-banner .race-meta {
+  color: var(--text-dim);
+  font-size: 0.95rem;
+  margin-top: 4px;
+}
+
+.race-banner .race-date {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+/* Grid */
+.grid-two {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+@media (max-width: 720px) {
+  .grid-two {
+    grid-template-columns: 1fr;
+  }
+  main {
+    padding: 16px;
+  }
+}
+
+/* Pole card */
+.pole-card .pole-driver {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 0;
+}
+
+.pole-card .pole-code {
+  background: var(--pole-gold);
+  color: #1a1500;
+  font-weight: 800;
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 1.4rem;
+  letter-spacing: 1px;
+}
+
+.pole-card .pole-info {
+  flex: 1;
+}
+
+.pole-card .pole-name {
+  font-size: 1.3rem;
+  font-weight: 600;
+}
+
+.pole-card .pole-team {
+  color: var(--text-dim);
+  font-size: 0.9rem;
+  margin-top: 2px;
+}
+
+.pole-secondary {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.pole-secondary-list {
+  list-style: none;
+  padding: 0;
+  margin: 8px 0 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.pole-secondary-list li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.875rem;
+  color: var(--text-dim);
+}
+
+.pole-secondary-list .pos {
+  width: 22px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.pole-secondary-list .code {
+  font-weight: 600;
+  color: var(--text);
+  width: 40px;
+}
+
+/* Weather card */
+.weather-card .weather-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  margin-top: 8px;
+}
+
+.weather-stat {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px 14px;
+}
+
+.weather-stat .label {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.weather-stat .value {
+  font-size: 1.4rem;
+  font-weight: 700;
+  margin-top: 4px;
+}
+
+.rain-warn {
+  color: var(--warn);
+}
+
+/* Race table */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+}
+
+th,
+td {
+  text-align: left;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+th {
+  color: var(--text-dim);
+  font-weight: 500;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+tbody tr {
+  transition: background 0.1s ease;
+}
+
+tbody tr:hover {
+  background: var(--bg-card-hover);
+}
+
+td.rank {
+  font-weight: 700;
+  width: 50px;
+  font-variant-numeric: tabular-nums;
+}
+
+td.code {
+  font-weight: 600;
+  width: 60px;
+  letter-spacing: 0.5px;
+}
+
+td.win-prob {
+  width: 100px;
+  font-variant-numeric: tabular-nums;
+}
+
+td.factor {
+  width: 100px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.factor-pos {
+  color: var(--good);
+}
+.factor-neg {
+  color: var(--bad);
+}
+.factor-neutral {
+  color: var(--text-dim);
+}
+
+.podium-1 td.rank {
+  color: var(--pole-gold);
+}
+.podium-2 td.rank {
+  color: #c0c0c0;
+}
+.podium-3 td.rank {
+  color: #cd7f32;
+}
+
+.win-prob-bar {
+  display: inline-block;
+  height: 6px;
+  background: var(--accent);
+  border-radius: 3px;
+  vertical-align: middle;
+  margin-left: 6px;
+}
+
+/* News */
+.narrative {
+  font-size: 1rem;
+  line-height: 1.6;
+  color: var(--text);
+}
+
+#storylines,
+#news-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+#storylines li {
+  padding: 6px 0 6px 16px;
+  position: relative;
+  color: var(--text);
+}
+
+#storylines li::before {
+  content: "→";
+  position: absolute;
+  left: 0;
+  color: var(--accent);
+}
+
+#news-list li {
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+#news-list li:last-child {
+  border-bottom: none;
+}
+
+#news-list a {
+  color: var(--text);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+#news-list a:hover {
+  color: var(--accent);
+}
+
+.news-meta {
+  color: var(--text-dim);
+  font-size: 0.8rem;
+  margin-top: 4px;
+}
+
+footer {
+  text-align: center;
+  padding: 24px 16px 32px 16px;
+}
+
+.spinning {
+  animation: spin 1s linear infinite;
+  display: inline-block;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
