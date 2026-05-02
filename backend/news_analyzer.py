@@ -167,7 +167,7 @@ def analyze_news(
         )
     except anthropic.APIError as e:
         log.warning("Claude API error during news analysis: %s", e)
-        return _neutral_response(f"News analysis unavailable: {e}")
+        return _neutral_response("News analysis temporarily unavailable.")
 
     text = next((b.text for b in response.content if b.type == "text"), "")
     try:
