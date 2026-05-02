@@ -3,20 +3,708 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>F1 Predictor</title>
+  <title>F1 Predictor &mdash; Miami Grand Prix</title>
   <style>
-    body { margin: 0; background: #0a0e1a; color: #e6eaf3; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; display: flex; align-items: center; justify-content: center; min-height: 100vh; }
-    .box { text-align: center; }
-    .logo { background: #e10600; color: white; font-weight: 800; padding: 6px 14px; border-radius: 4px; font-size: 2rem; letter-spacing: 2px; display: inline-block; margin-bottom: 16px; }
-    p { color: #8a93a8; }
+:root {
+  --bg: #0a0e1a;
+  --bg-card: #131a2b;
+  --bg-card-hover: #1a2238;
+  --border: #2a3450;
+  --text: #e6eaf3;
+  --text-dim: #8a93a8;
+  --accent: #e10600; /* F1 red */
+  --accent-soft: rgba(225, 6, 0, 0.15);
+  --good: #21c97a;
+  --bad: #ff5470;
+  --warn: #ffb84d;
+  --pole-gold: #ffcb47;
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial,
+    sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+}
+
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 32px;
+  border-bottom: 1px solid var(--border);
+  background: linear-gradient(180deg, #0a0e1a 0%, #0d1322 100%);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.logo {
+  background: var(--accent);
+  color: white;
+  font-weight: 800;
+  padding: 4px 10px;
+  border-radius: 4px;
+  letter-spacing: 1px;
+}
+
+.title {
+  font-weight: 600;
+  font-size: 1.25rem;
+  letter-spacing: 0.5px;
+}
+
+.refresh-btn {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 16px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-size: 0.875rem;
+}
+
+.refresh-btn:hover {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+main {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 24px;
+}
+
+.card h2 {
+  margin: 0 0 16px 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  color: var(--text);
+}
+
+.card h3 {
+  margin: 16px 0 8px 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-dim);
+}
+
+.muted {
+  color: var(--text-dim);
+  font-size: 0.875rem;
+}
+
+.card-loading,
+.race-banner-loading {
+  color: var(--text-dim);
+  padding: 16px 0;
+  font-style: italic;
+}
+
+/* Race banner */
+.race-banner {
+  background: linear-gradient(135deg, #131a2b 0%, #1d1428 100%);
+  border-color: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.race-banner .race-name {
+  font-size: 1.6rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.race-banner .race-meta {
+  color: var(--text-dim);
+  font-size: 0.95rem;
+  margin-top: 4px;
+}
+
+.race-banner .race-date {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+/* Grid */
+.grid-two {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+@media (max-width: 720px) {
+  .grid-two {
+    grid-template-columns: 1fr;
+  }
+  main {
+    padding: 16px;
+  }
+}
+
+/* Pole card */
+.pole-card .pole-driver {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 0;
+}
+
+.pole-card .pole-code {
+  background: var(--pole-gold);
+  color: #1a1500;
+  font-weight: 800;
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 1.4rem;
+  letter-spacing: 1px;
+}
+
+.pole-card .pole-info {
+  flex: 1;
+}
+
+.pole-card .pole-name {
+  font-size: 1.3rem;
+  font-weight: 600;
+}
+
+.pole-card .pole-team {
+  color: var(--text-dim);
+  font-size: 0.9rem;
+  margin-top: 2px;
+}
+
+.pole-secondary {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.pole-secondary-list {
+  list-style: none;
+  padding: 0;
+  margin: 8px 0 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.pole-secondary-list li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.875rem;
+  color: var(--text-dim);
+}
+
+.pole-secondary-list .pos {
+  width: 22px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.pole-secondary-list .code {
+  font-weight: 600;
+  color: var(--text);
+  width: 40px;
+}
+
+/* Weather card */
+.weather-card .weather-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  margin-top: 8px;
+}
+
+.weather-stat {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px 14px;
+}
+
+.weather-stat .label {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.weather-stat .value {
+  font-size: 1.4rem;
+  font-weight: 700;
+  margin-top: 4px;
+}
+
+.rain-warn {
+  color: var(--warn);
+}
+
+/* Race table */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+}
+
+th,
+td {
+  text-align: left;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+th {
+  color: var(--text-dim);
+  font-weight: 500;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+tbody tr {
+  transition: background 0.1s ease;
+}
+
+tbody tr:hover {
+  background: var(--bg-card-hover);
+}
+
+td.rank {
+  font-weight: 700;
+  width: 50px;
+  font-variant-numeric: tabular-nums;
+}
+
+td.code {
+  font-weight: 600;
+  width: 60px;
+  letter-spacing: 0.5px;
+}
+
+td.win-prob {
+  width: 100px;
+  font-variant-numeric: tabular-nums;
+}
+
+td.factor {
+  width: 100px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.factor-pos {
+  color: var(--good);
+}
+.factor-neg {
+  color: var(--bad);
+}
+.factor-neutral {
+  color: var(--text-dim);
+}
+
+.podium-1 td.rank {
+  color: var(--pole-gold);
+}
+.podium-2 td.rank {
+  color: #c0c0c0;
+}
+.podium-3 td.rank {
+  color: #cd7f32;
+}
+
+.win-prob-bar {
+  display: inline-block;
+  height: 6px;
+  background: var(--accent);
+  border-radius: 3px;
+  vertical-align: middle;
+  margin-left: 6px;
+}
+
+/* News */
+.narrative {
+  font-size: 1rem;
+  line-height: 1.6;
+  color: var(--text);
+}
+
+#storylines,
+#news-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+#storylines li {
+  padding: 6px 0 6px 16px;
+  position: relative;
+  color: var(--text);
+}
+
+#storylines li::before {
+  content: "→";
+  position: absolute;
+  left: 0;
+  color: var(--accent);
+}
+
+#news-list li {
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+#news-list li:last-child {
+  border-bottom: none;
+}
+
+#news-list a {
+  color: var(--text);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+#news-list a:hover {
+  color: var(--accent);
+}
+
+.news-meta {
+  color: var(--text-dim);
+  font-size: 0.8rem;
+  margin-top: 4px;
+}
+
+footer {
+  text-align: center;
+  padding: 24px 16px 32px 16px;
+}
+
+.spinning {
+  animation: spin 1s linear infinite;
+  display: inline-block;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+
+.update-time { text-align: right; margin-bottom: 8px; }
+#model-meta { margin: 0 0 4px 0; }
+
   </style>
 </head>
 <body>
-  <div class="box">
-    <div class="logo">F1</div>
-    <h1>F1 Predictor</h1>
-    <p>The first prediction will appear here after the GitHub Actions workflow runs.</p>
-    <p>Go to <strong>Actions</strong> &rarr; <strong>Generate F1 Prediction</strong> &rarr; <strong>Run workflow</strong> to trigger it now.</p>
-  </div>
+  <header>
+    <div class="brand">
+      <span class="logo">F1</span>
+      <span class="title">Predictor</span>
+    </div>
+    <div class="muted" style="font-size:0.8rem">Updated 2 May 2026 10:36 UTC</div>
+  </header>
+
+  <main>
+    <section class="card race-banner">
+      
+    <div>
+      <h1 class="race-name">Miami Grand Prix</h1>
+      <p class="race-meta">Miami International Autodrome &middot; Miami, USA &middot; Round 4</p>
+    </div>
+    <div class="race-date">Sunday, May 3, 2026</div>
+
+    </section>
+
+    <section class="grid-two">
+      <div class="card pole-card">
+        
+    <h2>Pole Position Prediction</h2>
+    <div class="pole-driver">
+      <div class="pole-code">RUS</div>
+      <div class="pole-info">
+        <div class="pole-name">George Russell</div>
+        <div class="pole-team">Mercedes</div>
+      </div>
+    </div>
+      <div class="pole-secondary">
+        <div class="muted">Most likely front runners</div>
+        <ul class="pole-secondary-list"><li><span class='pos'>2.</span><span class='code'>LEC</span><span>Charles Leclerc</span></li><li><span class='pos'>3.</span><span class='code'>ANT</span><span>Andrea Kimi Antonelli</span></li><li><span class='pos'>4.</span><span class='code'>HAM</span><span>Lewis Hamilton</span></li><li><span class='pos'>5.</span><span class='code'>NOR</span><span>Lando Norris</span></li></ul>
+      </div>
+
+      </div>
+      <div class="card weather-card">
+        
+    <h2>Race-Day Weather</h2>
+    <div class="weather-grid">
+      <div class="weather-stat">
+        <div class="label">Rain probability</div>
+        <div class="value rain-warn">92%</div>
+      </div>
+      <div class="weather-stat">
+        <div class="label">Temperature</div>
+        <div class="value">24.9&deg;C</div>
+      </div>
+      <div class="weather-stat">
+        <div class="label">Precipitation</div>
+        <div class="value">24.5 mm</div>
+      </div>
+      <div class="weather-stat">
+        <div class="label">Wind</div>
+        <div class="value">20 kph</div>
+      </div>
+    </div>
+    <p class="muted" style="margin-top:14px">Open-Meteo forecast</p>
+
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Predicted Finishing Order</h2>
+      
+      
+    <table>
+      <thead>
+        <tr>
+          <th>Pos</th><th>Code</th><th>Driver</th><th>Team</th>
+          <th>Win prob</th><th>News factor</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="podium-1">
+          <td class="rank">P1</td>
+          <td class="code">LEC</td>
+          <td>Charles Leclerc</td>
+          <td>Ferrari</td>
+          <td class="win-prob">69.9%<span class="win-prob-bar" style="width:80px"></span></td>
+          <td class="factor factor-neutral">0.00</td>
+        </tr>
+        <tr class="podium-2">
+          <td class="rank">P2</td>
+          <td class="code">ANT</td>
+          <td>Andrea Kimi Antonelli</td>
+          <td>Mercedes</td>
+          <td class="win-prob">21.0%<span class="win-prob-bar" style="width:24px"></span></td>
+          <td class="factor factor-neutral">0.00</td>
+        </tr>
+        <tr class="podium-3">
+          <td class="rank">P3</td>
+          <td class="code">RUS</td>
+          <td>George Russell</td>
+          <td>Mercedes</td>
+          <td class="win-prob">6.3%<span class="win-prob-bar" style="width:7px"></span></td>
+          <td class="factor factor-neutral">0.00</td>
+        </tr>
+        <tr class="">
+          <td class="rank">P4</td>
+          <td class="code">HAM</td>
+          <td>Lewis Hamilton</td>
+          <td>Ferrari</td>
+          <td class="win-prob">1.9%<span class="win-prob-bar" style="width:2px"></span></td>
+          <td class="factor factor-neutral">0.00</td>
+        </tr>
+        <tr class="">
+          <td class="rank">P5</td>
+          <td class="code">PIA</td>
+          <td>Oscar Piastri</td>
+          <td>McLaren</td>
+          <td class="win-prob">0.6%<span class="win-prob-bar" style="width:1px"></span></td>
+          <td class="factor factor-neutral">0.00</td>
+        </tr>
+        <tr class="">
+          <td class="rank">P6</td>
+          <td class="code">GAS</td>
+          <td>Pierre Gasly</td>
+          <td>Alpine F1 Team</td>
+          <td class="win-prob">0.2%<span class="win-prob-bar" style="width:0px"></span></td>
+          <td class="factor factor-neutral">0.00</td>
+        </tr>
+        <tr class="">
+          <td class="rank">P7</td>
+          <td class="code">VER</td>
+          <td>Max Verstappen</td>
+          <td>Red Bull</td>
+          <td class="win-prob">0.1%<span class="win-prob-bar" style="width:0px"></span></td>
+          <td class="factor factor-neutral">0.00</td>
+        </tr>
+        <tr class="">
+          <td class="rank">P8</td>
+          <td class="code">LAW</td>
+          <td>Liam Lawson</td>
+          <td>RB F1 Team</td>
+          <td class="win-prob">0.0%<span class="win-prob-bar" style="width:0px"></span></td>
+          <td class="factor factor-neutral">0.00</td>
+        </tr>
+        <tr class="">
+          <td class="rank">P9</td>
+          <td class="code">HAD</td>
+          <td>Isack Hadjar</td>
+          <td>Red Bull</td>
+          <td class="win-prob">0.0%<span class="win-prob-bar" style="width:0px"></span></td>
+          <td class="factor factor-neutral">0.00</td>
+        </tr>
+        <tr class="">
+          <td class="rank">P10</td>
+          <td class="code">NOR</td>
+          <td>Lando Norris</td>
+          <td>McLaren</td>
+          <td class="win-prob">0.0%<span class="win-prob-bar" style="width:0px"></span></td>
+          <td class="factor factor-neutral">0.00</td>
+        </tr>
+        <tr class="">
+          <td class="rank">P11</td>
+          <td class="code">OCO</td>
+          <td>Esteban Ocon</td>
+          <td>Haas F1 Team</td>
+          <td class="win-prob">0.0%<span class="win-prob-bar" style="width:0px"></span></td>
+          <td class="factor factor-neutral">0.00</td>
+        </tr>
+        <tr class="">
+          <td class="rank">P12</td>
+          <td class="code">HUL</td>
+          <td>Nico Hülkenberg</td>
+          <td>Audi</td>
+          <td class="win-prob">0.0%<span class="win-prob-bar" style="width:0px"></span></td>
+          <td class="factor factor-neutral">0.00</td>
+        </tr>
+        <tr class="">
+          <td class="rank">P13</td>
+          <td class="code">SAI</td>
+          <td>Carlos Sainz</td>
+          <td>Williams</td>
+          <td class="win-prob">0.0%<span class="win-prob-bar" style="width:0px"></span></td>
+          <td class="factor factor-neutral">0.00</td>
+        </tr>
+        <tr class="">
+          <td class="rank">P14</td>
+          <td class="code">PER</td>
+          <td>Sergio Pérez</td>
+          <td>Cadillac F1 Team</td>
+          <td class="win-prob">0.0%<span class="win-prob-bar" style="width:0px"></span></td>
+          <td class="factor factor-neutral">0.00</td>
+        </tr>
+        <tr class="">
+          <td class="rank">P15</td>
+          <td class="code">COL</td>
+          <td>Franco Colapinto</td>
+          <td>Alpine F1 Team</td>
+          <td class="win-prob">0.0%<span class="win-prob-bar" style="width:0px"></span></td>
+          <td class="factor factor-neutral">0.00</td>
+        </tr>
+        <tr class="">
+          <td class="rank">P16</td>
+          <td class="code">LIN</td>
+          <td>Arvid Lindblad</td>
+          <td>RB F1 Team</td>
+          <td class="win-prob">0.0%<span class="win-prob-bar" style="width:0px"></span></td>
+          <td class="factor factor-neutral">0.00</td>
+        </tr>
+        <tr class="">
+          <td class="rank">P17</td>
+          <td class="code">ALO</td>
+          <td>Fernando Alonso</td>
+          <td>Aston Martin</td>
+          <td class="win-prob">0.0%<span class="win-prob-bar" style="width:0px"></span></td>
+          <td class="factor factor-neutral">0.00</td>
+        </tr>
+        <tr class="">
+          <td class="rank">P18</td>
+          <td class="code">BOR</td>
+          <td>Gabriel Bortoleto</td>
+          <td>Audi</td>
+          <td class="win-prob">0.0%<span class="win-prob-bar" style="width:0px"></span></td>
+          <td class="factor factor-neutral">0.00</td>
+        </tr>
+        <tr class="">
+          <td class="rank">P19</td>
+          <td class="code">BOT</td>
+          <td>Valtteri Bottas</td>
+          <td>Cadillac F1 Team</td>
+          <td class="win-prob">0.0%<span class="win-prob-bar" style="width:0px"></span></td>
+          <td class="factor factor-neutral">0.00</td>
+        </tr>
+        <tr class="">
+          <td class="rank">P20</td>
+          <td class="code">BEA</td>
+          <td>Oliver Bearman</td>
+          <td>Haas F1 Team</td>
+          <td class="win-prob">0.0%<span class="win-prob-bar" style="width:0px"></span></td>
+          <td class="factor factor-neutral">0.00</td>
+        </tr>
+        <tr class="">
+          <td class="rank">P21</td>
+          <td class="code">STR</td>
+          <td>Lance Stroll</td>
+          <td>Aston Martin</td>
+          <td class="win-prob">0.0%<span class="win-prob-bar" style="width:0px"></span></td>
+          <td class="factor factor-neutral">0.00</td>
+        </tr>
+        <tr class="">
+          <td class="rank">P22</td>
+          <td class="code">ALB</td>
+          <td>Alexander Albon</td>
+          <td>Williams</td>
+          <td class="win-prob">0.0%<span class="win-prob-bar" style="width:0px"></span></td>
+          <td class="factor factor-neutral">0.00</td>
+        </tr></tbody>
+    </table>
+    </section>
+
+    
+    <p class="muted" id="model-meta">Race model: heuristic &middot; Pole model: heuristic &middot; 22 drivers</p>
+    <p class="muted update-time">Last updated: 2 May 2026 10:36 UTC</p>
+
+    <section class="card">
+      <h2>What's Driving the Prediction</h2>
+      <p class="narrative">News analysis disabled (no API key configured).</p>
+      <h3>Key storylines</h3>
+      <ul id="storylines"><li class='muted'>No major storylines detected.</li></ul>
+    </section>
+
+    <section class="card">
+      <h2>Latest F1 News</h2>
+      <ul id="news-list"><li><a href='https://www.motorsport.com/f1/news/why-albons-track-limits-strike-in-f1-miami-gp-sprint-qualifying-came-too-late/10817174/?utm_source=RSS&amp;utm_medium=referral&amp;utm_campaign=RSS-F1&amp;utm_term=News&amp;utm_content=www' target='_blank' rel='noopener'>Why Alex Albon&#039;s track-limits strike in F1&#039;s Miami GP sprint qualifying came too late</a><div class='news-meta'>Motorsport.com - Formula 1 - Stories &middot; 2 May 2026 10:06</div></li><li><a href='https://www.autosport.com/f1/news/why-albons-track-limits-strike-in-f1-miami-gp-sprint-qualifying-came-too-late/10817242/?utm_source=RSS&amp;utm_medium=referral&amp;utm_campaign=RSS-F1&amp;utm_term=News&amp;utm_content=uk' target='_blank' rel='noopener'>Why Albon&#039;s track-limits strike in F1 Miami GP sprint qualifying came too late</a><div class='news-meta'>Autosport.com - Formula 1 - Stories &middot; 2 May 2026 10:06</div></li><li><a href='https://www.bbc.com/sport/formula1/articles/cvgz0kpxjpgo?at_medium=RSS&amp;at_campaign=rss' target='_blank' rel='noopener'>Ex-F1 driver and Paralympic champion Zanardi dies</a><div class='news-meta'>BBC Sport &middot; 2 May 2026 09:08</div></li><li><a href='https://www.motorsport.com/f1/news/lando-norris-feels-more-like-last-year-with-mclaren-f1-car-confidence/10817185/?utm_source=RSS&amp;utm_medium=referral&amp;utm_campaign=RSS-F1&amp;utm_term=News&amp;utm_content=www' target='_blank' rel='noopener'>Lando Norris feels &quot;more like last year&quot; with McLaren F1 car confidence</a><div class='news-meta'>Motorsport.com - Formula 1 - Stories &middot; 2 May 2026 08:59</div></li><li><a href='https://www.autosport.com/f1/news/alex-zanardi-dies-at-the-age-of-59/10817217/?utm_source=RSS&amp;utm_medium=referral&amp;utm_campaign=RSS-F1&amp;utm_term=News&amp;utm_content=uk' target='_blank' rel='noopener'>Alex Zanardi dies at the age of 59</a><div class='news-meta'>Autosport.com - Formula 1 - Stories &middot; 2 May 2026 08:30</div></li><li><a href='https://www.autosport.com/f1/news/max-verstappen-red-bull-miami-updates-have-almost-halved-gap-to-f1-frontrunners/10817148/?utm_source=RSS&amp;utm_medium=referral&amp;utm_campaign=RSS-F1&amp;utm_term=News&amp;utm_content=uk' target='_blank' rel='noopener'>Verstappen: Red Bull&#039;s Miami GP updates have &quot;almost halved&quot; gap to F1 frontrunners</a><div class='news-meta'>Autosport.com - Formula 1 - Stories &middot; 1 May 2026 23:08</div></li><li><a href='https://www.motorsport.com/f1/news/max-verstappen-red-bull-miami-updates-have-almost-halved-gap-to-f1-frontrunners/10817138/?utm_source=RSS&amp;utm_medium=referral&amp;utm_campaign=RSS-F1&amp;utm_term=News&amp;utm_content=www' target='_blank' rel='noopener'>Max Verstappen: Red Bull Miami updates have &quot;almost halved&quot; gap to F1 frontrunners</a><div class='news-meta'>Motorsport.com - Formula 1 - Stories &middot; 1 May 2026 23:03</div></li><li><a href='https://www.motorsport.com/f1/news/george-russell-surprised-by-mclaren-and-ferrari-performance-jump-at-miami-gp/10817124/?utm_source=RSS&amp;utm_medium=referral&amp;utm_campaign=RSS-F1&amp;utm_term=News&amp;utm_content=www' target='_blank' rel='noopener'>George Russell surprised by McLaren and Ferrari performance jump at Miami GP</a><div class='news-meta'>Motorsport.com - Formula 1 - Stories &middot; 1 May 2026 22:51</div></li><li><a href='https://www.bbc.com/sport/formula1/articles/c2d8w4k5pd0o?at_medium=RSS&amp;at_campaign=rss' target='_blank' rel='noopener'>How to follow Miami Grand Prix on the BBC</a><div class='news-meta'>BBC Sport &middot; 1 May 2026 22:35</div></li><li><a href='https://www.bbc.com/sport/formula1/articles/ce8pdm1rr6vo?at_medium=RSS&amp;at_campaign=rss' target='_blank' rel='noopener'>Norris on Miami sprint pole as McLaren return to form</a><div class='news-meta'>BBC Sport &middot; 1 May 2026 22:33</div></li></ul>
+    </section>
+  </main>
+
+  <footer>
+    <p class="muted">
+      Live data: Jolpica/Ergast &middot; OpenF1 &middot; Open-Meteo &middot; F1 news RSS &middot;
+      Claude Opus 4.7 for news analysis. Predictions are model estimates, not betting advice.
+    </p>
+  </footer>
 </body>
 </html>
