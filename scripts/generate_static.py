@@ -139,21 +139,23 @@ def _race_table(predictions: list[dict]) -> str:
         <tr class="{podium}">
           <td class="rank">P{rank}</td>
           <td class="code">{_esc(d.get("code",""))}</td>
-          <td>{_esc(d.get("driver_name",""))}</td>
-          <td>{_esc(d.get("constructor",""))}</td>
+          <td class="driver-name">{_esc(d.get("driver_name",""))}</td>
+          <td class="team-name">{_esc(d.get("constructor",""))}</td>
           <td class="win-prob">{win_pct}%<span class="win-prob-bar" style="width:{bar_w:.0f}px"></span></td>
           <td class="factor {_factor_class(f)}">{fsign}{_fmt(f,2)}</td>
         </tr>""")
     return f"""
+    <div class="table-scroll">
     <table>
       <thead>
         <tr>
           <th>Pos</th><th>Code</th><th>Driver</th><th>Team</th>
-          <th>Win prob</th><th>News factor</th>
+          <th>Win prob</th><th class="col-factor">News factor</th>
         </tr>
       </thead>
       <tbody>{"".join(rows)}</tbody>
-    </table>"""
+    </table>
+    </div>"""
 
 
 def _news_section(news: dict, meta: dict, updated: str) -> str:

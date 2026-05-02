@@ -6,18 +6,18 @@
   <title>F1 Predictor &mdash; Miami Grand Prix</title>
   <style>
 :root {
-  --bg: #0a0e1a;
-  --bg-card: #131a2b;
-  --bg-card-hover: #1a2238;
-  --border: #2a3450;
-  --text: #e6eaf3;
-  --text-dim: #8a93a8;
+  --bg: #f5f7fa;
+  --bg-card: #ffffff;
+  --bg-card-hover: #f0f3f8;
+  --border: #d6dee8;
+  --text: #1a2238;
+  --text-dim: #5d6b85;
   --accent: #e10600; /* F1 red */
-  --accent-soft: rgba(225, 6, 0, 0.15);
-  --good: #21c97a;
-  --bad: #ff5470;
-  --warn: #ffb84d;
-  --pole-gold: #ffcb47;
+  --accent-soft: rgba(225, 6, 0, 0.08);
+  --good: #048a4f;
+  --bad: #d62740;
+  --warn: #c47a00;
+  --pole-gold: #cf8a00;
   font-family:
     -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial,
     sans-serif;
@@ -34,15 +34,18 @@ body {
   background: var(--bg);
   color: var(--text);
   min-height: 100vh;
+  -webkit-text-size-adjust: 100%;
 }
 
 header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 18px 32px;
+  padding: 16px 24px;
   border-bottom: 1px solid var(--border);
-  background: linear-gradient(180deg, #0a0e1a 0%, #0d1322 100%);
+  background: #ffffff;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .brand {
@@ -85,22 +88,23 @@ header {
 main {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 32px;
+  padding: 24px;
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 20px;
 }
 
 .card {
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: 10px;
-  padding: 24px;
+  padding: 20px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
 }
 
 .card h2 {
-  margin: 0 0 16px 0;
-  font-size: 1.1rem;
+  margin: 0 0 14px 0;
+  font-size: 1.05rem;
   font-weight: 600;
   letter-spacing: 0.3px;
   color: var(--text);
@@ -127,29 +131,30 @@ main {
 
 /* Race banner */
 .race-banner {
-  background: linear-gradient(135deg, #131a2b 0%, #1d1428 100%);
+  background: linear-gradient(135deg, #ffffff 0%, #fdf3f3 100%);
   border-color: var(--accent);
   display: flex;
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
-  gap: 16px;
+  gap: 12px;
 }
 
 .race-banner .race-name {
-  font-size: 1.6rem;
+  font-size: 1.5rem;
   font-weight: 700;
   margin: 0;
+  line-height: 1.2;
 }
 
 .race-banner .race-meta {
   color: var(--text-dim);
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   margin-top: 4px;
 }
 
 .race-banner .race-date {
-  font-size: 1.2rem;
+  font-size: 1.1rem;
   font-weight: 600;
   color: var(--accent);
 }
@@ -158,16 +163,7 @@ main {
 .grid-two {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 24px;
-}
-
-@media (max-width: 720px) {
-  .grid-two {
-    grid-template-columns: 1fr;
-  }
-  main {
-    padding: 16px;
-  }
+  gap: 20px;
 }
 
 /* Pole card */
@@ -175,26 +171,28 @@ main {
   display: flex;
   align-items: center;
   gap: 16px;
-  padding: 12px 0;
+  padding: 8px 0;
 }
 
 .pole-card .pole-code {
   background: var(--pole-gold);
-  color: #1a1500;
+  color: #ffffff;
   font-weight: 800;
   padding: 8px 14px;
   border-radius: 8px;
-  font-size: 1.4rem;
+  font-size: 1.3rem;
   letter-spacing: 1px;
 }
 
 .pole-card .pole-info {
   flex: 1;
+  min-width: 0;
 }
 
 .pole-card .pole-name {
-  font-size: 1.3rem;
+  font-size: 1.2rem;
   font-weight: 600;
+  word-break: break-word;
 }
 
 .pole-card .pole-team {
@@ -242,7 +240,7 @@ main {
 .weather-card .weather-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 16px;
+  gap: 12px;
   margin-top: 8px;
 }
 
@@ -254,14 +252,14 @@ main {
 }
 
 .weather-stat .label {
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   color: var(--text-dim);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
 .weather-stat .value {
-  font-size: 1.4rem;
+  font-size: 1.3rem;
   font-weight: 700;
   margin-top: 4px;
 }
@@ -270,11 +268,18 @@ main {
   color: var(--warn);
 }
 
-/* Race table */
+/* Race table — wrap in .table-scroll for horizontal scroll on small screens */
+.table-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin: 0 -4px;
+}
+
 table {
   width: 100%;
   border-collapse: collapse;
   font-size: 0.95rem;
+  min-width: 560px;
 }
 
 th,
@@ -282,14 +287,21 @@ td {
   text-align: left;
   padding: 10px 12px;
   border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+td.driver-name,
+td.team-name {
+  white-space: normal;
 }
 
 th {
   color: var(--text-dim);
-  font-weight: 500;
-  font-size: 0.8rem;
+  font-weight: 600;
+  font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  background: var(--bg);
 }
 
 tbody tr {
@@ -313,21 +325,23 @@ td.code {
 }
 
 td.win-prob {
-  width: 100px;
+  width: 110px;
   font-variant-numeric: tabular-nums;
 }
 
 td.factor {
-  width: 100px;
+  width: 90px;
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
 .factor-pos {
   color: var(--good);
+  font-weight: 600;
 }
 .factor-neg {
   color: var(--bad);
+  font-weight: 600;
 }
 .factor-neutral {
   color: var(--text-dim);
@@ -337,10 +351,10 @@ td.factor {
   color: var(--pole-gold);
 }
 .podium-2 td.rank {
-  color: #c0c0c0;
+  color: #8a8a8a;
 }
 .podium-3 td.rank {
-  color: #cd7f32;
+  color: #b06c2a;
 }
 
 .win-prob-bar {
@@ -367,7 +381,7 @@ td.factor {
 }
 
 #storylines li {
-  padding: 6px 0 6px 16px;
+  padding: 6px 0 6px 18px;
   position: relative;
   color: var(--text);
 }
@@ -392,6 +406,7 @@ td.factor {
   color: var(--text);
   text-decoration: none;
   font-weight: 500;
+  word-break: break-word;
 }
 
 #news-list a:hover {
@@ -402,6 +417,7 @@ td.factor {
   color: var(--text-dim);
   font-size: 0.8rem;
   margin-top: 4px;
+  word-break: break-word;
 }
 
 footer {
@@ -423,10 +439,90 @@ footer {
   }
 }
 
+/* ---------- Mobile (<= 720px) ---------- */
+@media (max-width: 720px) {
+  header {
+    padding: 12px 16px;
+  }
+  .title {
+    font-size: 1.1rem;
+  }
+  main {
+    padding: 14px;
+    gap: 14px;
+  }
+  .card {
+    padding: 16px;
+    border-radius: 8px;
+  }
+  .grid-two {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+  .race-banner {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .race-banner .race-name {
+    font-size: 1.25rem;
+  }
+  .race-banner .race-date {
+    font-size: 1rem;
+  }
+  .weather-card .weather-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+  .weather-stat {
+    padding: 10px 12px;
+  }
+  .weather-stat .value {
+    font-size: 1.1rem;
+  }
+
+  /* Compact table for phones */
+  table {
+    font-size: 0.85rem;
+    min-width: 480px;
+  }
+  th,
+  td {
+    padding: 8px 8px;
+  }
+  td.rank {
+    width: 38px;
+  }
+  td.code {
+    width: 46px;
+  }
+  td.win-prob {
+    width: 78px;
+  }
+  td.factor {
+    width: 60px;
+  }
+  .win-prob-bar {
+    display: none; /* Hide bar on phone — text remains */
+  }
+}
+
+/* ---------- Very narrow phones (<= 420px) ---------- */
+@media (max-width: 420px) {
+  /* Hide news factor column entirely on tiny screens */
+  th.col-factor,
+  td.factor {
+    display: none;
+  }
+  table {
+    min-width: 360px;
+  }
+  .race-banner .race-name {
+    font-size: 1.1rem;
+  }
+}
 
 .update-time { text-align: right; margin-bottom: 8px; }
 #model-meta { margin: 0 0 4px 0; }
-
   </style>
 </head>
 <body>
@@ -496,191 +592,199 @@ footer {
       <h2>Predicted Finishing Order</h2>
       
       
+    <div class="table-scroll">
+
+      
+      
     <table>
       <thead>
         <tr>
           <th>Pos</th><th>Code</th><th>Driver</th><th>Team</th>
-          <th>Win prob</th><th>News factor</th>
+          <th>Win prob</th><th class="col-factor">News factor</th>
         </tr>
       </thead>
       <tbody>
         <tr class="podium-1">
           <td class="rank">P1</td>
           <td class="code">LEC</td>
-          <td>Charles Leclerc</td>
-          <td>Ferrari</td>
+          <td class="driver-name">Charles Leclerc</td>
+          <td class="team-name">Ferrari</td>
           <td class="win-prob">69.9%<span class="win-prob-bar" style="width:80px"></span></td>
           <td class="factor factor-neutral">0.00</td>
         </tr>
         <tr class="podium-2">
           <td class="rank">P2</td>
           <td class="code">ANT</td>
-          <td>Andrea Kimi Antonelli</td>
-          <td>Mercedes</td>
+          <td class="driver-name">Andrea Kimi Antonelli</td>
+          <td class="team-name">Mercedes</td>
           <td class="win-prob">21.0%<span class="win-prob-bar" style="width:24px"></span></td>
           <td class="factor factor-neutral">0.00</td>
         </tr>
         <tr class="podium-3">
           <td class="rank">P3</td>
           <td class="code">RUS</td>
-          <td>George Russell</td>
-          <td>Mercedes</td>
+          <td class="driver-name">George Russell</td>
+          <td class="team-name">Mercedes</td>
           <td class="win-prob">6.3%<span class="win-prob-bar" style="width:7px"></span></td>
           <td class="factor factor-neutral">0.00</td>
         </tr>
         <tr class="">
           <td class="rank">P4</td>
           <td class="code">HAM</td>
-          <td>Lewis Hamilton</td>
-          <td>Ferrari</td>
+          <td class="driver-name">Lewis Hamilton</td>
+          <td class="team-name">Ferrari</td>
           <td class="win-prob">1.9%<span class="win-prob-bar" style="width:2px"></span></td>
           <td class="factor factor-neutral">0.00</td>
         </tr>
         <tr class="">
           <td class="rank">P5</td>
           <td class="code">PIA</td>
-          <td>Oscar Piastri</td>
-          <td>McLaren</td>
+          <td class="driver-name">Oscar Piastri</td>
+          <td class="team-name">McLaren</td>
           <td class="win-prob">0.6%<span class="win-prob-bar" style="width:1px"></span></td>
           <td class="factor factor-neutral">0.00</td>
         </tr>
         <tr class="">
           <td class="rank">P6</td>
           <td class="code">GAS</td>
-          <td>Pierre Gasly</td>
-          <td>Alpine F1 Team</td>
+          <td class="driver-name">Pierre Gasly</td>
+          <td class="team-name">Alpine F1 Team</td>
           <td class="win-prob">0.2%<span class="win-prob-bar" style="width:0px"></span></td>
           <td class="factor factor-neutral">0.00</td>
         </tr>
         <tr class="">
           <td class="rank">P7</td>
           <td class="code">VER</td>
-          <td>Max Verstappen</td>
-          <td>Red Bull</td>
+          <td class="driver-name">Max Verstappen</td>
+          <td class="team-name">Red Bull</td>
           <td class="win-prob">0.1%<span class="win-prob-bar" style="width:0px"></span></td>
           <td class="factor factor-neutral">0.00</td>
         </tr>
         <tr class="">
           <td class="rank">P8</td>
           <td class="code">LAW</td>
-          <td>Liam Lawson</td>
-          <td>RB F1 Team</td>
+          <td class="driver-name">Liam Lawson</td>
+          <td class="team-name">RB F1 Team</td>
           <td class="win-prob">0.0%<span class="win-prob-bar" style="width:0px"></span></td>
           <td class="factor factor-neutral">0.00</td>
         </tr>
         <tr class="">
           <td class="rank">P9</td>
           <td class="code">HAD</td>
-          <td>Isack Hadjar</td>
-          <td>Red Bull</td>
+          <td class="driver-name">Isack Hadjar</td>
+          <td class="team-name">Red Bull</td>
           <td class="win-prob">0.0%<span class="win-prob-bar" style="width:0px"></span></td>
           <td class="factor factor-neutral">0.00</td>
         </tr>
         <tr class="">
           <td class="rank">P10</td>
           <td class="code">NOR</td>
-          <td>Lando Norris</td>
-          <td>McLaren</td>
+          <td class="driver-name">Lando Norris</td>
+          <td class="team-name">McLaren</td>
           <td class="win-prob">0.0%<span class="win-prob-bar" style="width:0px"></span></td>
           <td class="factor factor-neutral">0.00</td>
         </tr>
         <tr class="">
           <td class="rank">P11</td>
           <td class="code">OCO</td>
-          <td>Esteban Ocon</td>
-          <td>Haas F1 Team</td>
+          <td class="driver-name">Esteban Ocon</td>
+          <td class="team-name">Haas F1 Team</td>
           <td class="win-prob">0.0%<span class="win-prob-bar" style="width:0px"></span></td>
           <td class="factor factor-neutral">0.00</td>
         </tr>
         <tr class="">
           <td class="rank">P12</td>
           <td class="code">HUL</td>
-          <td>Nico Hülkenberg</td>
-          <td>Audi</td>
+          <td class="driver-name">Nico Hülkenberg</td>
+          <td class="team-name">Audi</td>
           <td class="win-prob">0.0%<span class="win-prob-bar" style="width:0px"></span></td>
           <td class="factor factor-neutral">0.00</td>
         </tr>
         <tr class="">
           <td class="rank">P13</td>
           <td class="code">SAI</td>
-          <td>Carlos Sainz</td>
-          <td>Williams</td>
+          <td class="driver-name">Carlos Sainz</td>
+          <td class="team-name">Williams</td>
           <td class="win-prob">0.0%<span class="win-prob-bar" style="width:0px"></span></td>
           <td class="factor factor-neutral">0.00</td>
         </tr>
         <tr class="">
           <td class="rank">P14</td>
           <td class="code">PER</td>
-          <td>Sergio Pérez</td>
-          <td>Cadillac F1 Team</td>
+          <td class="driver-name">Sergio Pérez</td>
+          <td class="team-name">Cadillac F1 Team</td>
           <td class="win-prob">0.0%<span class="win-prob-bar" style="width:0px"></span></td>
           <td class="factor factor-neutral">0.00</td>
         </tr>
         <tr class="">
           <td class="rank">P15</td>
           <td class="code">COL</td>
-          <td>Franco Colapinto</td>
-          <td>Alpine F1 Team</td>
+          <td class="driver-name">Franco Colapinto</td>
+          <td class="team-name">Alpine F1 Team</td>
           <td class="win-prob">0.0%<span class="win-prob-bar" style="width:0px"></span></td>
           <td class="factor factor-neutral">0.00</td>
         </tr>
         <tr class="">
           <td class="rank">P16</td>
           <td class="code">LIN</td>
-          <td>Arvid Lindblad</td>
-          <td>RB F1 Team</td>
+          <td class="driver-name">Arvid Lindblad</td>
+          <td class="team-name">RB F1 Team</td>
           <td class="win-prob">0.0%<span class="win-prob-bar" style="width:0px"></span></td>
           <td class="factor factor-neutral">0.00</td>
         </tr>
         <tr class="">
           <td class="rank">P17</td>
           <td class="code">ALO</td>
-          <td>Fernando Alonso</td>
-          <td>Aston Martin</td>
+          <td class="driver-name">Fernando Alonso</td>
+          <td class="team-name">Aston Martin</td>
           <td class="win-prob">0.0%<span class="win-prob-bar" style="width:0px"></span></td>
           <td class="factor factor-neutral">0.00</td>
         </tr>
         <tr class="">
           <td class="rank">P18</td>
           <td class="code">BOR</td>
-          <td>Gabriel Bortoleto</td>
-          <td>Audi</td>
+          <td class="driver-name">Gabriel Bortoleto</td>
+          <td class="team-name">Audi</td>
           <td class="win-prob">0.0%<span class="win-prob-bar" style="width:0px"></span></td>
           <td class="factor factor-neutral">0.00</td>
         </tr>
         <tr class="">
           <td class="rank">P19</td>
           <td class="code">BOT</td>
-          <td>Valtteri Bottas</td>
-          <td>Cadillac F1 Team</td>
+          <td class="driver-name">Valtteri Bottas</td>
+          <td class="team-name">Cadillac F1 Team</td>
           <td class="win-prob">0.0%<span class="win-prob-bar" style="width:0px"></span></td>
           <td class="factor factor-neutral">0.00</td>
         </tr>
         <tr class="">
           <td class="rank">P20</td>
           <td class="code">BEA</td>
-          <td>Oliver Bearman</td>
-          <td>Haas F1 Team</td>
+          <td class="driver-name">Oliver Bearman</td>
+          <td class="team-name">Haas F1 Team</td>
           <td class="win-prob">0.0%<span class="win-prob-bar" style="width:0px"></span></td>
           <td class="factor factor-neutral">0.00</td>
         </tr>
         <tr class="">
           <td class="rank">P21</td>
           <td class="code">STR</td>
-          <td>Lance Stroll</td>
-          <td>Aston Martin</td>
+          <td class="driver-name">Lance Stroll</td>
+          <td class="team-name">Aston Martin</td>
           <td class="win-prob">0.0%<span class="win-prob-bar" style="width:0px"></span></td>
           <td class="factor factor-neutral">0.00</td>
         </tr>
         <tr class="">
           <td class="rank">P22</td>
           <td class="code">ALB</td>
-          <td>Alexander Albon</td>
-          <td>Williams</td>
+          <td class="driver-name">Alexander Albon</td>
+          <td class="team-name">Williams</td>
           <td class="win-prob">0.0%<span class="win-prob-bar" style="width:0px"></span></td>
           <td class="factor factor-neutral">0.00</td>
         </tr></tbody>
     </table>
+
+      
+      
+    </div>
     </section>
 
     

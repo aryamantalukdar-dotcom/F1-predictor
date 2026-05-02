@@ -129,8 +129,8 @@ function renderRaceTable(predictions) {
         <tr class="${podiumClass}">
           <td class="rank">P${d.rank}</td>
           <td class="code">${d.code}</td>
-          <td>${d.driver_name}</td>
-          <td>${d.constructor}</td>
+          <td class="driver-name">${d.driver_name}</td>
+          <td class="team-name">${d.constructor}</td>
           <td class="win-prob">
             ${winPct}%<span class="win-prob-bar" style="width:${barWidth}px"></span>
           </td>
@@ -140,6 +140,7 @@ function renderRaceTable(predictions) {
     })
     .join("");
   wrap.innerHTML = `
+    <div class="table-scroll">
     <table>
       <thead>
         <tr>
@@ -148,11 +149,12 @@ function renderRaceTable(predictions) {
           <th>Driver</th>
           <th>Team</th>
           <th>Win prob</th>
-          <th>News factor</th>
+          <th class="col-factor">News factor</th>
         </tr>
       </thead>
       <tbody>${rows}</tbody>
     </table>
+    </div>
   `;
 }
 
