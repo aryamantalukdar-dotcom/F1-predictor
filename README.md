@@ -153,6 +153,71 @@ F1-predictor/
 └── README.md
 ```
 
+## Deploy live (always-on URL)
+
+The repo ships with a `Dockerfile` plus config for the major free-tier hosts.
+Pick whichever you prefer — each gives you a permanent `https://...` URL.
+
+### Option A — Render (easiest, one click)
+
+1. Push this repo to your GitHub (the `claude/f1-prediction-app-1o7ca` branch
+   already has all deploy configs).
+2. Go to https://render.com → **New** → **Blueprint** → connect the repo.
+   Render reads `render.yaml` and provisions a free Docker web service.
+3. In the service's **Environment** tab, add `ANTHROPIC_API_KEY` (optional —
+   without it the app still runs, just without news-derived factors).
+4. First deploy takes ~5 min. You'll get a URL like
+   `https://f1-predictor-xxxx.onrender.com`. The health check at
+   `/api/health` keeps the service warm.
+
+> Render's free tier sleeps after 15 min of inactivity and wakes on the next
+> request (~30 s cold start). For true always-on, use the Starter plan or
+> Fly.io below.
+
+### Option B — Fly.io (always-on, generous free tier)
+
+```bash
+# one-time
+curl -L https://fly.io/install.sh | sh
+fly auth signup   # or: fly auth login
+
+# from the repo root
+fly launch --no-deploy --copy-config --name f1-predictor
+fly secrets set ANTHROPIC_API_KEY=sk-ant-...   # optional
+fly deploy
+```
+
+`fly.toml` is pre-configured with a 512 MB shared-CPU VM, HTTPS, and a health
+check on `/api/health`. Set `min_machines_running = 1` in `fly.toml` if you
+want zero cold starts.
+
+### Option C — Railway
+
+Click **New Project → Deploy from GitHub** and pick the repo. Railway reads
+`railway.toml` automatically. Add `ANTHROPIC_API_KEY` in the Variables tab.
+
+### Option D — Any Docker host
+
+```bash
+docker build -t f1-predictor .
+docker run -p 8000:8000 -e ANTHROPIC_API_KEY=sk-ant-... f1-predictor
+```
+
+Works on Google Cloud Run, AWS App Runner, Azure Container Apps, etc.
+
+### Training models in production
+
+The container ships with the heuristic fallback so it works on day one. To
+upgrade to the real LightGBM models on a live host, exec into the container
+and run training once — the resulting `models_cache/*.pkl` files are picked
+up automatically:
+
+```bash
+# Render: use the Shell tab
+# Fly.io: fly ssh console
+python -m backend.train --seasons 2021 2022 2023 2024 2025
+```
+
 ## Disclaimer
 
 These are model estimates from public data. Don't bet your house on them.
