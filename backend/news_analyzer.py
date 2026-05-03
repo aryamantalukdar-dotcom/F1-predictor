@@ -6,8 +6,8 @@ the ML pipeline as a feature; the summary is shown in the UI as a "what's
 moving the needle this week" panel.
 
 Design notes:
-  - Uses claude-opus-4-7 with adaptive thinking — race-prediction synthesis
-    benefits from real reasoning over the news.
+  - Uses claude-sonnet-4-6 with adaptive thinking — good balance of quality
+    and cost for news-to-factor synthesis.
   - Structured output (`output_config.format`) guarantees parseable JSON.
   - Prompt caching is enabled on the analyst-instructions block; over many
     predictions during a season this prefix is reused and saves tokens.
@@ -24,7 +24,7 @@ import anthropic
 
 log = logging.getLogger(__name__)
 
-MODEL = "claude-opus-4-7"
+MODEL = "claude-sonnet-4-6"
 
 # Frozen analyst instructions — stable across the season, eligible for caching.
 ANALYST_SYSTEM = """You are an expert F1 strategist and journalist with 20+ years \

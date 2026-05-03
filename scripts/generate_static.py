@@ -255,7 +255,7 @@ def build_html(data: dict, updated: str) -> str:
   <footer>
     <p class="muted">
       Live data: Jolpica/Ergast &middot; OpenF1 &middot; Open-Meteo &middot; F1 news RSS &middot;
-      Claude Opus 4.7 for news analysis. Predictions are model estimates, not betting advice.
+      Claude Sonnet 4.6 for news analysis. Predictions are model estimates, not betting advice.
     </p>
   </footer>
 </body>
