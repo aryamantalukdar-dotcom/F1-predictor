@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import logging
 import os
+from datetime import date, datetime, timedelta
 from typing import Any
 
 import pandas as pd
@@ -107,17 +108,35 @@ def _heuristic_pole(feature_df: pd.DataFrame, driver_meta: dict[str, dict]) -> l
     return out
 
 
+def _in_race_week(race: dict) -> bool:
+    """Return True if today falls within the 7-day window leading up to race day."""
+    try:
+        race_date = datetime.strptime(race["date"], "%Y-%m-%d").date()
+    except (KeyError, ValueError):
+        return False
+    today = date.today()
+    return (race_date - timedelta(days=6)) <= today <= race_date
+
+
+def _maybe_analyze_news(context: dict) -> dict:
+    """Run Claude news analysis only during race weeks; return neutral otherwise."""
+    if not _in_race_week(context.get("race") or {}):
+        log.info("Not a race week — skipping news analysis to save tokens")
+        return news_analyzer._neutral_response("News analysis runs during race weekends only.")
+    log.info("Race week detected — running news analysis via Claude")
+    return news_analyzer.analyze_news(
+        news=context["news"],
+        driver_standings=context["driver_standings"],
+        race=context["race"],
+    )
+
+
 def predict_next_race(use_models: bool = True) -> dict[str, Any]:
     """Build the full prediction payload for the next upcoming race."""
     log.info("Fetching live race context")
     context = data_sources.build_race_context()
 
-    log.info("Running news analysis via Claude")
-    analysis = news_analyzer.analyze_news(
-        news=context["news"],
-        driver_standings=context["driver_standings"],
-        race=context["race"],
-    )
+    analysis = _maybe_analyze_news(context)
     factors = news_analyzer.factors_dict(analysis)
 
     log.info("Building feature frame")
