@@ -34,26 +34,61 @@ def _driver_meta(standings: list[dict]) -> dict[str, dict]:
 def _heuristic_predictor(feature_df: pd.DataFrame, driver_meta: dict[str, dict]) -> list[dict]:
     """Fallback predictor used when no trained model is available.
 
-    Combines a few hand-weighted signals into an expected position. This is
-    intentionally simple but produces a sane ranking on the very first run
-    before anyone has trained the real models.
+    Combines hand-weighted signals into an expected position with three
+    calibrations the naive heuristic was missing:
+      1. Bayesian shrinkage of track history toward the driver's team mean
+         when the driver has few starts at the circuit (Miami, Vegas, etc).
+      2. Weather-aware uncertainty: rain reduces reliance on track-form and
+         flattens the win-prob distribution (more chaos = less peaked).
+      3. Lower softmax temperature so the top-line probabilities aren't
+         absurdly peaked (no more 70% / 0%).
     """
+    import numpy as np
+
+    n = len(feature_df)
+    if n == 0:
+        return []
+
+    rain_p = float(feature_df["rain_probability"].iloc[0]) if "rain_probability" in feature_df else 0.0
+    rain_chaos = min(rain_p, 0.6)  # cap effect; rain matters but isn't everything
+
+    # --- Bayesian shrinkage ---
+    # Drivers with few starts at this circuit shouldn't lean on noisy track history.
+    # Blend track_avg_finish with the team's median season finish.
+    team_median = (
+        feature_df.groupby("constructor_id")["avg_finish_last5"]
+        .transform("median")
+        .fillna(12.0)
+    )
+    track_starts = feature_df.get("track_starts", pd.Series([0] * n)).fillna(0).clip(0, 4)
+    confidence = (track_starts / 4.0).to_numpy()  # 0 starts -> 0, 4+ starts -> 1
+    track_avg = feature_df["track_avg_finish"].fillna(12.0).to_numpy()
+    shrunken_track = confidence * track_avg + (1 - confidence) * team_median.to_numpy()
+
+    # --- Weather-aware weights ---
+    # In rain, track-form predicts less and DNF rate predicts more.
+    track_weight = 0.20 * (1.0 - 0.7 * rain_chaos)
+    dnf_weight = 3.0 + 4.0 * rain_chaos
+
     scores = (
         0.45 * feature_df["avg_finish_last5"].fillna(12)
-        + 0.20 * feature_df["track_avg_finish"].fillna(12)
+        + track_weight * shrunken_track
         + 0.10 * feature_df["constructor_position"].fillna(10)
         + 0.05 * feature_df["driver_position"].fillna(10)
-        + 0.20 * feature_df.get("qual_position", pd.Series([12.0] * len(feature_df))).fillna(12)
+        + 0.20 * feature_df.get("qual_position", pd.Series([12.0] * n)).fillna(12)
         - 1.5 * feature_df["news_factor"].fillna(0)
         - 0.6 * feature_df["momentum"].fillna(0)
-        + 3.0 * feature_df["dnf_rate_last5"].fillna(0)
+        + dnf_weight * feature_df["dnf_rate_last5"].fillna(0)
     )
 
     order = scores.argsort()
     ranks = order.argsort().to_numpy(dtype=float)
-    import numpy as np
 
-    win_logits = -ranks * 1.2
+    # Softmax temperature: lower = flatter (less confident). Old value 1.2 made
+    # P1 ~70% which is way too peaked. Calibrated baseline is ~0.55, and rain
+    # flattens it further (more genuine uncertainty).
+    temp_coef = 0.55 - 0.2 * rain_chaos
+    win_logits = -ranks * temp_coef
     win_probs = np.exp(win_logits) / np.exp(win_logits).sum()
 
     out = []

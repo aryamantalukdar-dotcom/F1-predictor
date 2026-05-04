@@ -129,6 +129,7 @@ def build_feature_frame(context: dict, news_factors: dict[str, float] | None = N
     cstandings = {c["constructor_id"]: c for c in context["constructor_standings"]}
     season_results = context["season_results"]
     season_qual = context["season_qualifying"]
+    season_sprints = context.get("season_sprints", pd.DataFrame())
     circuit_history = context["circuit_history"]
     news_factors = news_factors or {}
 
@@ -160,6 +161,19 @@ def build_feature_frame(context: dict, news_factors: dict[str, float] | None = N
             if not d_qual.empty and (d_qual["round"] == race["round"]).any()
             else np.nan
         )
+
+        # Sprint result is a strong proxy for race pace when main quali hasn't
+        # happened yet (Friday predictions on a sprint weekend). Use sprint
+        # qualifying position if available, else sprint race finish position.
+        if pd.isna(latest_qual) and not season_sprints.empty:
+            sp = season_sprints[
+                (season_sprints["round"] == race["round"])
+                & (season_sprints["driver_id"] == driver_id)
+            ]
+            if not sp.empty:
+                grid = sp["sprint_grid"].iloc[0]
+                pos = sp["sprint_position"].iloc[0]
+                latest_qual = float(grid) if pd.notna(grid) and grid else float(pos)
 
         rows.append(
             FeatureRow(

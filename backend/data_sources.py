@@ -202,6 +202,32 @@ def get_qualifying_results(season: int) -> pd.DataFrame:
     return _cached(f"qual:{season}", ttl=1800, fn=_fetch)
 
 
+def get_sprint_results(season: int) -> pd.DataFrame:
+    """Sprint qualifying + sprint race results. Returns empty frame if season has no sprints yet."""
+    def _fetch():
+        rows = []
+        try:
+            data = _http_get(f"{JOLPICA_BASE}/{season}/sprint.json", params={"limit": 500})
+        except Exception:
+            return pd.DataFrame()
+        for race in data["MRData"]["RaceTable"]["Races"]:
+            for r in race.get("SprintResults", []):
+                rows.append(
+                    {
+                        "season": int(race["season"]),
+                        "round": int(race["round"]),
+                        "circuit_id": race["Circuit"]["circuitId"],
+                        "driver_id": r["Driver"]["driverId"],
+                        "constructor_id": r["Constructor"]["constructorId"],
+                        "sprint_grid": int(r["grid"]) if r.get("grid") else None,
+                        "sprint_position": int(r["position"]),
+                    }
+                )
+        return pd.DataFrame(rows)
+
+    return _cached(f"sprint:{season}", ttl=1800, fn=_fetch)
+
+
 def get_circuit_history(circuit_id: str, seasons_back: int = 5) -> pd.DataFrame:
     """Per-driver historical results at a specific circuit across recent seasons."""
     today = dt.date.today()
@@ -365,6 +391,7 @@ def build_race_context(target_race: dict | None = None) -> dict:
         "constructor_standings": get_constructor_standings(season),
         "season_results": get_recent_results(season),
         "season_qualifying": get_qualifying_results(season),
+        "season_sprints": get_sprint_results(season),
         "circuit_history": get_circuit_history(race["circuit_id"]),
         "news": [dataclasses.asdict(n) for n in get_recent_news()],
     }
