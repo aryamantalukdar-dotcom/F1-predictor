@@ -12,8 +12,6 @@ env/
 
 # Caches & artifacts
 data_cache/
-models_cache/*.pkl
-models_cache/*.txt
 fastf1_cache/
 .fastf1/
 

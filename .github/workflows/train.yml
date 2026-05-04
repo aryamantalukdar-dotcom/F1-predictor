@@ -1,0 +1,45 @@
+name: Train Prediction Models
+
+on:
+  # Manual trigger only — training is a heavy, infrequent op.
+  # Run this once after first deploy, then re-run after each F1 season finishes.
+  workflow_dispatch:
+    inputs:
+      seasons:
+        description: "Space-separated seasons to train on (e.g. '2021 2022 2023 2024 2025')"
+        required: false
+        default: "2021 2022 2023 2024 2025"
+
+permissions:
+  contents: write
+
+jobs:
+  train:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Install dependencies
+        run: pip install -r backend/requirements.txt
+
+      - name: Train race + pole models
+        run: |
+          mkdir -p models_cache
+          python -m backend.train --seasons ${{ github.event.inputs.seasons }}
+
+      - name: Commit trained models
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add models_cache/race_predictor.pkl models_cache/pole_predictor.pkl
+          git diff --cached --quiet || git commit -m "chore: retrain prediction models on seasons ${{ github.event.inputs.seasons }} [skip ci]"
+          git push
