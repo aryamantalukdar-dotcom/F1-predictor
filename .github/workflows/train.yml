@@ -34,7 +34,13 @@ jobs:
       - name: Train race + pole models
         run: |
           mkdir -p models_cache
-          python -m backend.train --seasons ${{ github.event.inputs.seasons }}
+          # Fall back to a sane default if input was left empty
+          SEASONS="${{ github.event.inputs.seasons }}"
+          if [ -z "$SEASONS" ]; then
+            SEASONS="2021 2022 2023 2024 2025"
+          fi
+          echo "Training on seasons: $SEASONS"
+          python -m backend.train --seasons $SEASONS
 
       - name: Commit trained models
         run: |

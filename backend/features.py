@@ -232,7 +232,9 @@ def build_training_frame(seasons: list[int], data_sources_module) -> pd.DataFram
             log.warning("training data unavailable for %s: %s", season, e)
             continue
         if results.empty:
+            log.warning("no results returned for season %s; skipping", season)
             continue
+        log.info("season %s: %d result rows across %d races", season, len(results), results["round"].nunique())
 
         for race in schedule:
             rnd = race["round"]
