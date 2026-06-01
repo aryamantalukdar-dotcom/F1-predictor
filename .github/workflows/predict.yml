@@ -37,6 +37,19 @@ jobs:
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add docs/index.html
-          # Only commit if anything changed
-          git diff --cached --quiet || git commit -m "chore: update F1 prediction [skip ci]"
-          git push
+          if git diff --cached --quiet; then
+            echo "No prediction changes to commit"
+            exit 0
+          fi
+          git commit -m "chore: update F1 prediction [skip ci]"
+          # Rebase + retry in case another workflow run pushed to main while we
+          # were generating (train workflow can take ~3 min and clash).
+          for attempt in 1 2 3; do
+            git pull --rebase --autostash origin main
+            if git push origin main; then
+              exit 0
+            fi
+            echo "push attempt $attempt failed, retrying..."
+            sleep 5
+          done
+          exit 1

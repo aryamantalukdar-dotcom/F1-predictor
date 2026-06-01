@@ -47,5 +47,20 @@ jobs:
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add models_cache/race_predictor.pkl models_cache/pole_predictor.pkl
-          git diff --cached --quiet || git commit -m "chore: retrain prediction models on seasons ${{ github.event.inputs.seasons }} [skip ci]"
-          git push
+          if git diff --cached --quiet; then
+            echo "No model changes to commit"
+            exit 0
+          fi
+          git commit -m "chore: retrain prediction models on seasons ${{ github.event.inputs.seasons }} [skip ci]"
+          # The predict workflow may have pushed to main while training was
+          # running. Rebase onto the latest main before pushing, retry once.
+          for attempt in 1 2 3; do
+            git pull --rebase --autostash origin main
+            if git push origin main; then
+              exit 0
+            fi
+            echo "push attempt $attempt failed, retrying..."
+            sleep 5
+          done
+          echo "push failed after 3 attempts"
+          exit 1
