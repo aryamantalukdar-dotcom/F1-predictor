@@ -268,7 +268,19 @@ def main() -> int:
     args = parser.parse_args()
 
     log.info("Running prediction pipeline...")
-    data = predict.predict_next_race()
+    try:
+        data = predict.predict_next_race()
+    except RuntimeError as e:
+        # Transient upstream failure (typically Jolpica/Open-Meteo timeout).
+        # Exit cleanly so the workflow doesn't email a failure and the
+        # existing prediction page stays in place until the next run.
+        log.warning("Skipping page regeneration — upstream data unavailable: %s", e)
+        return 0
+    except Exception as e:
+        # Same treatment for any other unexpected failure: leave the existing
+        # page alone rather than committing a broken one.
+        log.exception("Skipping page regeneration — unexpected error: %s", e)
+        return 0
 
     updated = datetime.now(timezone.utc).strftime("%-d %b %Y %H:%M UTC")
     html = build_html(data, updated)

@@ -45,19 +45,20 @@ def _cached(key: str, ttl: float, fn):
     return value
 
 
-def _http_get(url: str, params: dict | None = None, timeout: float = 15.0) -> dict:
+def _http_get(url: str, params: dict | None = None, timeout: float = 8.0) -> dict:
     """GET JSON with retry + exponential backoff.
 
-    Jolpica/Ergast occasionally returns transient 429s and 5xx during the
-    training run (we make ~15 calls in quick succession). Retry up to 4 times
-    with backoff at 1s, 2s, 4s, 8s before giving up.
+    Jolpica/Ergast occasionally returns transient 429s and 5xx (and the API
+    can go fully unreachable for short periods). Retry up to 3 times with
+    backoff at 1s, 2s. Per-attempt timeout kept short (8s) so the worst case
+    is ~28s of waiting before we bail and let the caller handle it.
     """
     last_exc: Exception | None = None
-    for attempt in range(4):
+    for attempt in range(3):
         try:
             with httpx.Client(timeout=timeout, headers={"User-Agent": "f1-predictor/1.0"}) as c:
                 r = c.get(url, params=params)
-                # Don't retry 4xx other than 429 — they're real errors (e.g. season not yet)
+                # 404 is a real error (e.g. season not yet), fail fast.
                 if r.status_code == 404:
                     r.raise_for_status()
                 if r.status_code >= 500 or r.status_code == 429:
@@ -66,12 +67,15 @@ def _http_get(url: str, params: dict | None = None, timeout: float = 15.0) -> di
                     )
                 r.raise_for_status()
                 return r.json()
-        except (httpx.HTTPStatusError, httpx.TransportError, httpx.TimeoutException) as e:
+        except httpx.HTTPStatusError as e:
+            # Don't retry 404; it's terminal.
+            if e.response is not None and e.response.status_code == 404:
+                raise
             last_exc = e
-            if attempt < 3:
-                time.sleep(2**attempt)  # 1, 2, 4 seconds
-                continue
-            raise
+        except (httpx.TransportError, httpx.TimeoutException) as e:
+            last_exc = e
+        if attempt < 2:
+            time.sleep(2**attempt)  # 1s, 2s
     assert last_exc is not None
     raise last_exc
 
