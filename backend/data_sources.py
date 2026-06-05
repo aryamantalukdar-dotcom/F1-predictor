@@ -398,6 +398,66 @@ def get_latest_session_meta() -> dict | None:
         return None
 
 
+def get_practice_pace() -> pd.DataFrame:
+    """Aggregate per-driver practice pace for the current/latest race meeting.
+
+    Pulls lap times for every Practice session of the meeting via OpenF1,
+    filters out in/out laps and obvious outliers (>200s), and returns one
+    row per driver with their best and median clean lap.
+
+    Returns a DataFrame with columns: driver_code, best_lap_s, median_lap_s,
+    n_laps. Empty if no practice has happened yet or OpenF1 is unreachable.
+    """
+    def _fetch():
+        meetings = _http_get(f"{OPENF1_BASE}/meetings", params={"meeting_key": "latest"})
+        if not meetings:
+            return pd.DataFrame()
+        meeting_key = meetings[0]["meeting_key"]
+
+        sessions = _http_get(f"{OPENF1_BASE}/sessions", params={"meeting_key": meeting_key})
+        practice_sessions = [s for s in sessions if s.get("session_type") == "Practice"]
+        if not practice_sessions:
+            return pd.DataFrame()
+
+        # Driver number → 3-letter code mapping (stable across the weekend)
+        latest_key = max(s["session_key"] for s in practice_sessions)
+        drivers = _http_get(f"{OPENF1_BASE}/drivers", params={"session_key": latest_key})
+        num_to_code = {d["driver_number"]: d.get("name_acronym", "") for d in drivers}
+
+        all_laps = []
+        for sess in practice_sessions:
+            try:
+                laps = _http_get(f"{OPENF1_BASE}/laps", params={"session_key": sess["session_key"]})
+            except Exception as e:
+                log.warning("openf1 laps fetch failed for session %s: %s", sess["session_key"], e)
+                continue
+            for lap in laps:
+                dur = lap.get("lap_duration")
+                if not dur or dur > 200 or lap.get("is_pit_out_lap"):
+                    continue
+                all_laps.append({"driver_number": lap["driver_number"], "lap_duration": float(dur)})
+
+        if not all_laps:
+            return pd.DataFrame()
+
+        df = pd.DataFrame(all_laps)
+        agg = (
+            df.groupby("driver_number")
+            .agg(best_lap_s=("lap_duration", "min"),
+                 median_lap_s=("lap_duration", "median"),
+                 n_laps=("lap_duration", "count"))
+            .reset_index()
+        )
+        agg["driver_code"] = agg["driver_number"].map(num_to_code)
+        return agg[agg["driver_code"].astype(bool)].reset_index(drop=True)
+
+    try:
+        return _cached("practice_pace:latest", ttl=900, fn=_fetch)
+    except Exception as e:
+        log.warning("practice pace fetch failed: %s", e)
+        return pd.DataFrame()
+
+
 # ---------------------------------------------------------------------------
 # Convenience: assemble everything we need for one race prediction
 # ---------------------------------------------------------------------------
@@ -420,6 +480,7 @@ def build_race_context(target_race: dict | None = None) -> dict:
         "season_results": get_recent_results(season),
         "season_qualifying": get_qualifying_results(season),
         "season_sprints": get_sprint_results(season),
+        "practice_pace": get_practice_pace(),
         "circuit_history": get_circuit_history(race["circuit_id"]),
         "news": [dataclasses.asdict(n) for n in get_recent_news()],
     }

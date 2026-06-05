@@ -70,8 +70,17 @@ def _heuristic_predictor(feature_df: pd.DataFrame, driver_meta: dict[str, dict])
     track_weight = 0.20 * (1.0 - 0.7 * rain_chaos)
     dnf_weight = 3.0 + 4.0 * rain_chaos
 
+    # Practice pace: when available (Friday onward) it's a strong real-world
+    # signal. Use it in place of the form prior weight for the driver-level
+    # term, leaving track + constructor signals untouched.
+    practice = feature_df.get("practice_rank", pd.Series([float("nan")] * n))
+    has_practice = practice.notna()
+
+    # Driver-skill prior: practice rank when we have it, otherwise season form.
+    driver_prior = practice.where(has_practice, feature_df["avg_finish_last5"].fillna(12))
+
     scores = (
-        0.45 * feature_df["avg_finish_last5"].fillna(12)
+        0.45 * driver_prior
         + track_weight * shrunken_track
         + 0.10 * feature_df["constructor_position"].fillna(10)
         + 0.05 * feature_df["driver_position"].fillna(10)

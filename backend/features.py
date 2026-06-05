@@ -74,6 +74,10 @@ class FeatureRow:
     # Optional: qualifying result, used for race model when available
     qual_position: float = np.nan
 
+    # Optional: rank (1 = fastest) across all practice sessions for this race
+    # weekend. NaN before any practice has run.
+    practice_rank: float = np.nan
+
 
 def _avg_finish(rows: pd.DataFrame, n: int) -> float:
     if rows.empty:
@@ -130,8 +134,18 @@ def build_feature_frame(context: dict, news_factors: dict[str, float] | None = N
     season_results = context["season_results"]
     season_qual = context["season_qualifying"]
     season_sprints = context.get("season_sprints", pd.DataFrame())
+    practice_pace = context.get("practice_pace", pd.DataFrame())
     circuit_history = context["circuit_history"]
     news_factors = news_factors or {}
+
+    # Build a {driver_code: practice_rank} from OpenF1 practice pace.
+    # Rank 1 = fastest best-lap. Drivers without practice data stay NaN and
+    # the heuristic treats that as "no signal yet" (Friday morning predictions).
+    practice_rank_by_code: dict[str, float] = {}
+    if not practice_pace.empty and "best_lap_s" in practice_pace.columns:
+        sorted_pace = practice_pace.sort_values("best_lap_s").reset_index(drop=True)
+        for i, row in sorted_pace.iterrows():
+            practice_rank_by_code[str(row["driver_code"]).upper()] = float(i + 1)
 
     circuit_id = race["circuit_id"]
     is_street = int(circuit_id in STREET_CIRCUITS)
@@ -202,6 +216,7 @@ def build_feature_frame(context: dict, news_factors: dict[str, float] | None = N
                 is_power_circuit=is_power,
                 news_factor=float(news_factors.get(driver_id, 0.0)),
                 qual_position=float(latest_qual) if pd.notna(latest_qual) else np.nan,
+                practice_rank=practice_rank_by_code.get(d.get("code", "").upper(), np.nan),
             )
         )
 
