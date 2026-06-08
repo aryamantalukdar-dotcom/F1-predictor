@@ -179,8 +179,24 @@ def rank_predictions(
         df["_pred"] = nudged
         team_medians = df.groupby("constructor_id")["_pred"].transform("median").to_numpy()
         starts = feature_df["track_starts"].fillna(0).to_numpy(dtype=float)
-        shrink = np.where(starts < 2, 0.40, 0.0)  # 40% pull to team median if <2 starts
+        shrink = np.where(starts < 2, 0.40, 0.0)
         nudged = (1 - shrink) * nudged + shrink * team_medians
+
+    # 4) Championship skill floor.
+    # Canada GP backtest: model predicted Verstappen P10 with 0% win prob;
+    # actual result was P3. A top-5 championship driver shouldn't be
+    # predicted to finish far down based on rolling form alone. Pull the
+    # prediction toward their championship position by 30%, with stronger
+    # pull at the top of the table. DNF-prone drivers (>40% recent DNF
+    # rate) skip this — the form penalty there is legitimate.
+    if "driver_position" in feature_df.columns:
+        champ_pos = feature_df["driver_position"].fillna(15).to_numpy(dtype=float)
+        dnf_rate = feature_df.get("dnf_rate_last5", pd.Series([0.0] * len(feature_df))).fillna(0).to_numpy()
+        # Blend weight: 0.35 for championship P1-P3, fading to 0 by P10.
+        blend = np.clip(0.40 - 0.04 * champ_pos, 0.0, 0.35)
+        # Skip the floor entirely for drivers whose reliability is genuinely bad
+        blend = np.where(dnf_rate > 0.4, 0.0, blend)
+        nudged = (1 - blend) * nudged + blend * champ_pos
 
     order = np.argsort(nudged)
     ranks = np.argsort(order).astype(float)
