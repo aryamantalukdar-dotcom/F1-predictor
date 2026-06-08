@@ -147,22 +147,56 @@ class PolePredictor(_BaseLGBM):
 def rank_predictions(
     feature_df: pd.DataFrame, predictor: _BaseLGBM, driver_meta: dict[str, dict]
 ) -> list[dict]:
-    """Run the predictor and return a ranked list of {driver_id, predicted_position, win_prob, ...}."""
-    raw = predictor.predict(feature_df)
+    """Run the predictor and return a ranked list of {driver_id, predicted_position, win_prob, ...}.
 
-    # News factor as a small post-hoc nudge on top of the model's prediction.
-    # The factor is also a feature, but applying it directly here keeps the
-    # narrative explanation transparent in the UI.
+    Three post-hoc adjustments on top of the raw LightGBM output:
+      1. News factor: shift each driver's predicted position by -1.5 * factor
+         (Claude-derived signed [-1, 1] sentiment).
+      2. Practice pace: when OpenF1 has lap times from the current weekend's
+         practice sessions, blend the practice rank in at weight 0.45. This
+         is the strongest real-world short-term pace signal.
+      3. Rookie/sparse-driver shrinkage: drivers with very few starts at
+         this circuit (track_starts < 2) get pulled 40% toward their team's
+         median predicted position. Counteracts rookie blowup like a
+         four-race-old driver suddenly leading at 70%.
+
+    Softmax temperature lowered from 1.2 to 0.55 — the old value produced
+    a 70% top-driver probability which is empirically too peaked.
+    """
+    raw = predictor.predict(feature_df)
     nudged = raw - 1.5 * feature_df["news_factor"].to_numpy()
 
+    # 2) Practice-pace nudge
+    if "practice_rank" in feature_df.columns:
+        pr = feature_df["practice_rank"].to_numpy(dtype=float)
+        mask = ~np.isnan(pr)
+        if mask.any():
+            nudged[mask] = 0.55 * nudged[mask] + 0.45 * pr[mask]
+
+    # 3) Bayesian shrinkage toward team median for sparse-history drivers
+    if "track_starts" in feature_df.columns and "constructor_id" in feature_df.columns:
+        df = feature_df.copy()
+        df["_pred"] = nudged
+        team_medians = df.groupby("constructor_id")["_pred"].transform("median").to_numpy()
+        starts = feature_df["track_starts"].fillna(0).to_numpy(dtype=float)
+        shrink = np.where(starts < 2, 0.40, 0.0)  # 40% pull to team median if <2 starts
+        nudged = (1 - shrink) * nudged + shrink * team_medians
+
     order = np.argsort(nudged)
-    out = []
-    # Softmax over negative rank gives sensible win probabilities — top driver
-    # gets ~30-40% in a typical field, tapering off rapidly.
-    ranks = np.argsort(order).astype(float)  # 0 = best
-    win_logits = -ranks * 1.2
+    ranks = np.argsort(order).astype(float)
+
+    # Weather-aware softmax temperature: rain → flatter distribution.
+    rain_p = (
+        float(feature_df["rain_probability"].iloc[0])
+        if "rain_probability" in feature_df.columns and len(feature_df)
+        else 0.0
+    )
+    rain_chaos = min(rain_p, 0.6)
+    temp_coef = 0.55 - 0.2 * rain_chaos
+    win_logits = -ranks * temp_coef
     win_probs = np.exp(win_logits) / np.exp(win_logits).sum()
 
+    out = []
     for i, idx in enumerate(order):
         row = feature_df.iloc[idx]
         did = row["driver_id"]
