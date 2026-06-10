@@ -148,10 +148,12 @@ class PolePredictor(_BaseLGBM):
 
 
 # Weight pulling the race prediction toward a plain recent-form ordering.
-# Walk-forward backtesting showed avg_finish_last5 alone outperforming the
-# model on the Thursday snapshot (Spearman 0.70 vs 0.67), so the ensemble
-# anchors on form and lets the model adjust at the margins.
-FORM_ANCHOR = 0.5
+# Walk-forward sweep over {0.3, 0.5, 0.7, 1.0} (10 races, Thursday snapshot):
+# heavier anchoring won every metric (w=1.0: winner_hit 0.50, Spearman 0.696,
+# MAE 2.89). We keep 30% model influence rather than going to pure form so
+# that odds, news, and practice signals — unavailable historically, so the
+# sweep couldn't credit them — still have a channel into the prediction.
+FORM_ANCHOR = 0.7
 
 
 def rank_predictions(
@@ -212,7 +214,17 @@ def rank_predictions(
         blend = np.where(dnf_rate > 0.4, 0.0, blend)
         nudged = (1 - blend) * nudged + blend * champ_pos
 
-    # 5) Betting-market blend. When odds are available, pull toward the
+    # 5) Recent-form anchor (race path only — quali has its own dynamics).
+    # See FORM_ANCHOR note above: the baseline ordering is too strong to
+    # override wholesale. Applied BEFORE the odds blend so market information
+    # acts on the anchored prediction instead of being diluted by it.
+    if dnf_aware and form_anchor > 0 and "avg_finish_last5" in feature_df.columns:
+        form_rank = (
+            feature_df["avg_finish_last5"].fillna(12.0).rank(method="first").to_numpy(dtype=float)
+        )
+        nudged = (1.0 - form_anchor) * nudged + form_anchor * form_rank
+
+    # 6) Betting-market blend. When odds are available, pull toward the
     # market's implied ranking — bookmakers aggregate information (testing
     # pace, paddock chatter, insider sentiment) no public dataset has.
     if "odds_rank" in feature_df.columns:
@@ -220,15 +232,6 @@ def rank_predictions(
         omask = ~np.isnan(orank)
         if omask.any():
             nudged[omask] = 0.65 * nudged[omask] + 0.35 * orank[omask]
-
-    # 6) Recent-form anchor (race path only — quali has its own dynamics).
-    # See FORM_ANCHOR note above: the baseline ordering is too strong to
-    # override wholesale.
-    if dnf_aware and form_anchor > 0 and "avg_finish_last5" in feature_df.columns:
-        form_rank = (
-            feature_df["avg_finish_last5"].fillna(12.0).rank(method="first").to_numpy(dtype=float)
-        )
-        nudged = (1.0 - form_anchor) * nudged + form_anchor * form_rank
 
     rain_p = (
         float(feature_df["rain_probability"].iloc[0])
