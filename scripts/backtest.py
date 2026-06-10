@@ -92,7 +92,8 @@ def main() -> int:
         .itertuples(index=False)
     )
 
-    model_scores, base_scores, pole_hits = [], [], []
+    stack_scores, raw_scores, base_scores = [], [], []
+    pole_hits_stack, pole_hits_raw = [], []
     n_eval = 0
 
     for season, rnd in races:
@@ -115,35 +116,44 @@ def main() -> int:
         snapshot = race_rows.copy()
         actual_quali = snapshot.set_index("driver_id")["qual_position"]
         snapshot["qual_position"] = np.nan
+        drivers = snapshot["driver_id"].tolist()
 
+        # Variant A: raw model outputs, no post-hoc stack
+        raw_pole_vals = pole_model.predict(snapshot)
+        raw_pole_rank = {d: r + 1 for r, d in enumerate([drivers[i] for i in np.argsort(raw_pole_vals)])}
+
+        snap_raw = snapshot.copy()
+        snap_raw["qual_position"] = snap_raw["driver_id"].map({d: float(r) for d, r in raw_pole_rank.items()})
+        raw_race_vals = race_model.predict(snap_raw)
+        raw_rank = {d: r + 1 for r, d in enumerate([drivers[i] for i in np.argsort(raw_race_vals)])}
+
+        # Variant B: full post-hoc stack (production path)
         pole_preds = models.rank_predictions(snapshot, pole_model, {}, dnf_aware=False)
         pole_rank = {p["driver_id"]: p["rank"] for p in pole_preds}
+        snap_stack = snapshot.copy()
+        snap_stack["qual_position"] = snap_stack["driver_id"].map({d: float(r) for d, r in pole_rank.items()})
+        race_preds = models.rank_predictions(snap_stack, race_model, {})
+        stack_rank = {p["driver_id"]: p["rank"] for p in race_preds}
 
-        # Pole hit
+        # Pole hits
         actual_pole = actual_quali.dropna()
         if not actual_pole.empty:
             actual_pole_driver = actual_pole.idxmin()
-            pred_pole_driver = min(pole_rank, key=pole_rank.get)
-            pole_hits.append(float(pred_pole_driver == actual_pole_driver))
-
-        # Two-stage race prediction
-        snapshot["qual_position"] = snapshot["driver_id"].map({d: float(r) for d, r in pole_rank.items()})
-        race_preds = models.rank_predictions(snapshot, race_model, {})
-        pred_rank = {p["driver_id"]: p["rank"] for p in race_preds}
-
-        s = _score_race(pred_rank, race_rows)
-        if s:
-            model_scores.append(s)
-            n_eval += 1
+            pole_hits_stack.append(float(min(pole_rank, key=pole_rank.get) == actual_pole_driver))
+            pole_hits_raw.append(float(min(raw_pole_rank, key=raw_pole_rank.get) == actual_pole_driver))
 
         # Baseline: order by recent form only
         base_order = race_rows.sort_values("avg_finish_last5")["driver_id"].tolist()
         base_rank = {d: i + 1 for i, d in enumerate(base_order)}
-        b = _score_race(base_rank, race_rows)
-        if b:
-            base_scores.append(b)
 
-    if not model_scores:
+        s, r, b = _score_race(stack_rank, race_rows), _score_race(raw_rank, race_rows), _score_race(base_rank, race_rows)
+        if s and r and b:
+            stack_scores.append(s)
+            raw_scores.append(r)
+            base_scores.append(b)
+            n_eval += 1
+
+    if not stack_scores:
         print("No races evaluated — not enough data.")
         return 1
 
@@ -151,14 +161,14 @@ def main() -> int:
         keys = scores[0].keys()
         return {k: float(np.nanmean([s[k] for s in scores])) for k in keys}
 
-    m, b = _agg(model_scores), _agg(base_scores)
+    st, rw, b = _agg(stack_scores), _agg(raw_scores), _agg(base_scores)
     print(f"\n=== Backtest: {n_eval} races, Thursday snapshot ===")
-    print(f"{'metric':<18} {'model':>8} {'baseline':>9}")
-    print("-" * 38)
-    for k in m:
-        print(f"{k:<18} {m[k]:>8.3f} {b.get(k, float('nan')):>9.3f}")
-    if pole_hits:
-        print(f"{'pole_hit':<18} {np.mean(pole_hits):>8.3f} {'—':>9}")
+    print(f"{'metric':<18} {'stack':>8} {'raw_model':>10} {'baseline':>9}")
+    print("-" * 48)
+    for k in st:
+        print(f"{k:<18} {st[k]:>8.3f} {rw[k]:>10.3f} {b[k]:>9.3f}")
+    if pole_hits_stack:
+        print(f"{'pole_hit':<18} {np.mean(pole_hits_stack):>8.3f} {np.mean(pole_hits_raw):>10.3f} {'—':>9}")
     return 0
 
 

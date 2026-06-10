@@ -237,8 +237,11 @@ def build_training_frame(seasons: list[int], data_sources_module) -> pd.DataFram
     rebuilding would require capturing standings *before* each race. We
     approximate by computing rolling features from prior rounds only.
     """
-    frames = []
-    for season in seasons:
+    # Load everything up front so track history can span seasons — at
+    # inference get_circuit_history looks 5 seasons back, and training must
+    # match or the model sees feature ranges it never trained on.
+    season_data: dict[int, tuple] = {}
+    for season in sorted(seasons):
         try:
             schedule = data_sources_module.get_season_schedule(season)
             results = data_sources_module.get_recent_results(season)
@@ -250,6 +253,15 @@ def build_training_frame(seasons: list[int], data_sources_module) -> pd.DataFram
             log.warning("no results returned for season %s; skipping", season)
             continue
         log.info("season %s: %d result rows across %d races", season, len(results), results["round"].nunique())
+        season_data[season] = (schedule, results, qual)
+
+    if not season_data:
+        return pd.DataFrame()
+
+    all_results = pd.concat([r for (_, r, _) in season_data.values()], ignore_index=True)
+
+    frames = []
+    for season, (schedule, results, qual) in season_data.items():
 
         for race in schedule:
             rnd = race["round"]
@@ -280,7 +292,18 @@ def build_training_frame(seasons: list[int], data_sources_module) -> pd.DataFram
                 mom = _momentum(d_prior, 5)
                 avg_grid = float(d_prior.tail(5)["grid"].mean()) if not d_prior.empty else 12.0
 
-                track_rows = prior[(prior["driver_id"] == did) & (prior["circuit_id"] == circuit_id)]
+                # Cross-season track history (a circuit only appears once per
+                # season — same-season-only lookups would always be empty,
+                # leaving these features as constants the model ignores while
+                # inference feeds it real values).
+                track_rows = all_results[
+                    (all_results["driver_id"] == did)
+                    & (all_results["circuit_id"] == circuit_id)
+                    & (
+                        (all_results["season"] < season)
+                        | ((all_results["season"] == season) & (all_results["round"] < rnd))
+                    )
+                ]
                 track_avg = float(track_rows["position"].dropna().mean()) if not track_rows.empty else 12.0
                 track_best = float(track_rows["position"].dropna().min()) if not track_rows.empty else 12.0
 
