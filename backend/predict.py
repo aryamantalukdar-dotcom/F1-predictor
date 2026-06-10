@@ -15,7 +15,7 @@ from typing import Any
 
 import pandas as pd
 
-from . import data_sources, features, models, news_analyzer
+from . import data_sources, features, models, news_analyzer, odds
 
 log = logging.getLogger(__name__)
 
@@ -187,6 +187,38 @@ def predict_next_race(use_models: bool = True) -> dict[str, Any]:
     feature_df = features.build_feature_frame(context, news_factors=factors)
     driver_meta = _driver_meta(context["driver_standings"])
 
+    # ---- Betting-market signal (race week only — preserves API quota) ----
+    odds_used = False
+    if _in_race_week(context.get("race") or {}):
+        market_probs = odds.get_market_probs(context["driver_standings"])
+        if market_probs:
+            ranks = odds.market_ranks(market_probs)
+            feature_df["odds_rank"] = feature_df["driver_id"].map(ranks)
+            odds_used = True
+
+    # ---- Pole prediction (first: its output feeds the race model) ----
+    pole_predictions: list[dict]
+    if use_models and os.path.exists(models.pole_model_path()):
+        log.info("Loading trained pole model")
+        pole_model = models.PolePredictor()
+        pole_model.load(models.pole_model_path())
+        pole_predictions = models.rank_predictions(
+            feature_df, pole_model, driver_meta, dnf_aware=False
+        )
+        pole_model_used = "lightgbm"
+    else:
+        log.info("No trained pole model found; using heuristic fallback")
+        pole_predictions = _heuristic_pole(feature_df, driver_meta)
+        pole_model_used = "heuristic"
+
+    # ---- Two-stage: before qualifying has run, use the pole model's
+    # predicted grid as the race model's qual_position input. After Saturday
+    # the actual classification (already in the frame) takes precedence.
+    if feature_df["qual_position"].isna().all() and pole_predictions:
+        predicted_quali = {p["driver_id"]: float(p["rank"]) for p in pole_predictions}
+        feature_df["qual_position"] = feature_df["driver_id"].map(predicted_quali)
+        log.info("No qualifying yet — feeding predicted grid into the race model")
+
     # ---- Race finish prediction ----
     race_predictions: list[dict]
     if use_models and os.path.exists(models.race_model_path()):
@@ -199,19 +231,6 @@ def predict_next_race(use_models: bool = True) -> dict[str, Any]:
         log.info("No trained race model found; using heuristic fallback")
         race_predictions = _heuristic_predictor(feature_df, driver_meta)
         race_model_used = "heuristic"
-
-    # ---- Pole prediction ----
-    pole_predictions: list[dict]
-    if use_models and os.path.exists(models.pole_model_path()):
-        log.info("Loading trained pole model")
-        pole_model = models.PolePredictor()
-        pole_model.load(models.pole_model_path())
-        pole_predictions = models.rank_predictions(feature_df, pole_model, driver_meta)
-        pole_model_used = "lightgbm"
-    else:
-        log.info("No trained pole model found; using heuristic fallback")
-        pole_predictions = _heuristic_pole(feature_df, driver_meta)
-        pole_model_used = "heuristic"
 
     pole = pole_predictions[0] if pole_predictions else None
 
@@ -231,5 +250,6 @@ def predict_next_race(use_models: bool = True) -> dict[str, Any]:
             "race_model": race_model_used,
             "pole_model": pole_model_used,
             "n_drivers": len(feature_df),
+            "odds_used": odds_used,
         },
     }

@@ -1,14 +1,16 @@
 name: Train Prediction Models
 
 on:
-  # Manual trigger only — training is a heavy, infrequent op.
-  # Run this once after first deploy, then re-run after each F1 season finishes.
+  schedule:
+    # Monday 06:00 UTC — after a race weekend's results are published, so the
+    # model always reflects current-season form (recency-weighted).
+    - cron: "0 6 * * 1"
   workflow_dispatch:
     inputs:
       seasons:
-        description: "Space-separated seasons to train on (e.g. '2021 2022 2023 2024 2025')"
+        description: "Space-separated seasons to train on (empty = last 5 incl. current)"
         required: false
-        default: "2021 2022 2023 2024 2025"
+        default: ""
 
 permissions:
   contents: write
@@ -34,13 +36,15 @@ jobs:
       - name: Train race + pole models
         run: |
           mkdir -p models_cache
-          # Fall back to a sane default if input was left empty
           SEASONS="${{ github.event.inputs.seasons }}"
           if [ -z "$SEASONS" ]; then
-            SEASONS="2021 2022 2023 2024 2025"
+            # backend.train defaults to the last 5 seasons incl. current,
+            # with recency weighting
+            python -m backend.train
+          else
+            echo "Training on seasons: $SEASONS"
+            python -m backend.train --seasons $SEASONS
           fi
-          echo "Training on seasons: $SEASONS"
-          python -m backend.train --seasons $SEASONS
 
       - name: Commit trained models
         run: |
@@ -51,7 +55,7 @@ jobs:
             echo "No model changes to commit"
             exit 0
           fi
-          git commit -m "chore: retrain prediction models on seasons ${{ github.event.inputs.seasons }} [skip ci]"
+          git commit -m "chore: retrain prediction models [skip ci]"
           # The predict workflow may have pushed to main while training was
           # running. Rebase onto the latest main before pushing, retry once.
           for attempt in 1 2 3; do

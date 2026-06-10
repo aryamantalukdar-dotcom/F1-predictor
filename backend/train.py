@@ -21,10 +21,15 @@ log = logging.getLogger(__name__)
 
 
 def main() -> int:
+    import datetime as dt
+
+    current_year = dt.date.today().year
+    default_seasons = list(range(current_year - 4, current_year + 1))
+
     parser = argparse.ArgumentParser(description="Train F1 prediction models")
     parser.add_argument(
-        "--seasons", type=int, nargs="+", default=[2021, 2022, 2023, 2024, 2025],
-        help="Seasons to use for training",
+        "--seasons", type=int, nargs="+", default=default_seasons,
+        help="Seasons to use for training (default: last 5 incl. current)",
     )
     args = parser.parse_args()
 
@@ -33,7 +38,19 @@ def main() -> int:
     if df.empty:
         log.error("No training data assembled — check network/API access")
         return 1
-    log.info("Training frame: %d rows across %d races", len(df), df.groupby(["season", "round"]).ngroups)
+
+    # Recency weighting: the current season dominates. A regulation reset
+    # (like 2026) reshuffles the competitive order, so pre-reset history is
+    # context, not gospel.
+    max_season = int(df["season"].max())
+    age_weights = {0: 4.0, 1: 2.0, 2: 1.0, 3: 0.6, 4: 0.4}
+    df["_weight"] = (max_season - df["season"]).map(lambda a: age_weights.get(int(a), 0.3))
+    log.info(
+        "Training frame: %d rows across %d races (season weights: %s)",
+        len(df),
+        df.groupby(["season", "round"]).ngroups,
+        {int(s): age_weights.get(max_season - int(s), 0.3) for s in sorted(df["season"].unique())},
+    )
 
     os.makedirs(models.models_dir(), exist_ok=True)
 

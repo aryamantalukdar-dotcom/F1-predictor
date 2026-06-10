@@ -64,15 +64,8 @@ class _BaseLGBM:
         # a worst-case finish so the model learns to penalize unreliable cars.
         df = df.copy()
         df[self.target_col] = df[self.target_col].fillna(20)
-        # news_factor is added at predict time only; defaults to 0 in training
-        if "news_factor" not in df.columns:
-            df["news_factor"] = 0.0
-        # rain_probability/temperature/wind only available at predict time
-        for c in ("rain_probability", "temperature_c", "wind_kph"):
-            if c not in df.columns:
-                df[c] = 0.0
-        # championship state only available at predict time
-        for c in ("driver_points", "driver_position", "constructor_points", "constructor_position"):
+        # Defensive: any feature column missing from the frame becomes 0
+        for c in self.feature_cols:
             if c not in df.columns:
                 df[c] = 0.0
         X = df[self.feature_cols]
@@ -91,8 +84,13 @@ class _BaseLGBM:
         X_tr, y_tr = self._xy(train_df)
         X_vl, y_vl = self._xy(val_df)
 
-        dtrain = lgb.Dataset(X_tr, y_tr)
-        dval = lgb.Dataset(X_vl, y_vl, reference=dtrain)
+        # Optional recency weighting: train.py attaches a `_weight` column so
+        # current-season races dominate over pre-regulation-change history.
+        w_tr = train_df["_weight"].to_numpy() if "_weight" in train_df.columns else None
+        w_vl = val_df["_weight"].to_numpy() if "_weight" in val_df.columns else None
+
+        dtrain = lgb.Dataset(X_tr, y_tr, weight=w_tr)
+        dval = lgb.Dataset(X_vl, y_vl, reference=dtrain, weight=w_vl)
 
         self.model = lgb.train(
             _lgb_params(),
@@ -133,9 +131,14 @@ class RacePredictor(_BaseLGBM):
 
 
 class PolePredictor(_BaseLGBM):
-    """Predicts qualifying position. We don't use qual_position itself as input."""
+    """Predicts qualifying position. We don't use qual_position itself as input.
 
-    target_col = "grid_position"
+    Target is the qualifying classification, NOT race grid: grid includes
+    penalties and pit-lane starts (grid=0 in Ergast data, which a regression
+    would learn as "better than pole").
+    """
+
+    target_col = "qual_position"
     include_qual = False
 
 
@@ -145,7 +148,10 @@ class PolePredictor(_BaseLGBM):
 
 
 def rank_predictions(
-    feature_df: pd.DataFrame, predictor: _BaseLGBM, driver_meta: dict[str, dict]
+    feature_df: pd.DataFrame,
+    predictor: _BaseLGBM,
+    driver_meta: dict[str, dict],
+    dnf_aware: bool = True,
 ) -> list[dict]:
     """Run the predictor and return a ranked list of {driver_id, predicted_position, win_prob, ...}.
 
@@ -198,20 +204,26 @@ def rank_predictions(
         blend = np.where(dnf_rate > 0.4, 0.0, blend)
         nudged = (1 - blend) * nudged + blend * champ_pos
 
-    order = np.argsort(nudged)
-    ranks = np.argsort(order).astype(float)
+    # 5) Betting-market blend. When odds are available, pull toward the
+    # market's implied ranking — bookmakers aggregate information (testing
+    # pace, paddock chatter, insider sentiment) no public dataset has.
+    if "odds_rank" in feature_df.columns:
+        orank = feature_df["odds_rank"].to_numpy(dtype=float)
+        omask = ~np.isnan(orank)
+        if omask.any():
+            nudged[omask] = 0.65 * nudged[omask] + 0.35 * orank[omask]
 
-    # Weather-aware softmax temperature: rain → flatter distribution.
     rain_p = (
         float(feature_df["rain_probability"].iloc[0])
         if "rain_probability" in feature_df.columns and len(feature_df)
         else 0.0
     )
-    rain_chaos = min(rain_p, 0.6)
-    temp_coef = 0.55 - 0.2 * rain_chaos
-    win_logits = -ranks * temp_coef
-    win_probs = np.exp(win_logits) / np.exp(win_logits).sum()
 
+    exp_pos, win_probs = _simulate_outcomes(
+        nudged, feature_df, rain_p=rain_p, dnf_aware=dnf_aware
+    )
+
+    order = np.argsort(exp_pos)
     out = []
     for i, idx in enumerate(order):
         row = feature_df.iloc[idx]
@@ -224,13 +236,62 @@ def rank_predictions(
                 "driver_name": meta.get("name", did),
                 "constructor": meta.get("constructor", row["constructor_id"]),
                 "code": meta.get("code", did[:3].upper()),
-                "predicted_position": float(nudged[idx]),
+                "predicted_position": float(exp_pos[idx]),
                 "raw_model_position": float(raw[idx]),
                 "news_factor": float(row["news_factor"]),
                 "win_probability": float(win_probs[idx]),
             }
         )
     return out
+
+
+def _simulate_outcomes(
+    pace: np.ndarray, feature_df: pd.DataFrame, rain_p: float = 0.0, dnf_aware: bool = True
+) -> tuple[np.ndarray, np.ndarray]:
+    """Monte Carlo over race outcomes → (expected_position, win_probability).
+
+    Replaces the old softmax-over-rank, which only looked at rank and
+    ignored both score gaps and reliability. Each simulation draws
+    per-driver pace noise (wider in rain) and DNF events; DNF'd cars drop
+    to the back. Win probability is then literally "share of simulations
+    won", which is calibrated by construction given the inputs.
+    """
+    n = len(pace)
+    if n == 0:
+        return np.array([]), np.array([])
+
+    rng = np.random.default_rng(7)
+    n_sims = 4000
+    rain_chaos = min(max(rain_p, 0.0), 0.6)
+    noise_scale = 2.3 + 2.5 * rain_chaos
+
+    sims = pace[None, :] + rng.normal(0.0, noise_scale, size=(n_sims, n))
+
+    if dnf_aware:
+        # P(DNF) per driver: recent driver rate shrunk toward the team rate
+        # and a global base rate (small samples otherwise dominate).
+        driver_dnf = (
+            feature_df.get("dnf_rate_last5", pd.Series([0.1] * n)).fillna(0.1).to_numpy(dtype=float)
+        )
+        if "constructor_id" in feature_df.columns:
+            team_dnf = (
+                feature_df.assign(_d=driver_dnf)
+                .groupby("constructor_id")["_d"]
+                .transform("mean")
+                .to_numpy()
+            )
+        else:
+            team_dnf = driver_dnf
+        p_dnf = np.clip(0.5 * driver_dnf + 0.3 * team_dnf + 0.2 * 0.10, 0.02, 0.40)
+        # Rain raises everyone's chance of an incident
+        p_dnf = np.clip(p_dnf * (1.0 + 0.8 * rain_chaos), 0.02, 0.55)
+        dnf_draws = rng.random((n_sims, n)) < p_dnf[None, :]
+        sims = np.where(dnf_draws, sims + 100.0, sims)
+
+    sim_ranks = sims.argsort(axis=1).argsort(axis=1)  # 0 = wins that sim
+    win_probs = (sim_ranks == 0).mean(axis=0)
+    exp_pos = sim_ranks.mean(axis=0) + 1.0
+    return exp_pos, win_probs
 
 
 # ---------------------------------------------------------------------------

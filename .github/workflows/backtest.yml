@@ -1,0 +1,36 @@
+name: Backtest Prediction Model
+
+on:
+  workflow_dispatch:
+    inputs:
+      eval_seasons:
+        description: "Seasons to evaluate (space-separated)"
+        required: false
+        default: "2025 2026"
+
+permissions:
+  contents: read
+
+jobs:
+  backtest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Install dependencies
+        run: pip install -r backend/requirements.txt
+
+      - name: Run walk-forward backtest
+        run: |
+          EVAL="${{ github.event.inputs.eval_seasons }}"
+          if [ -z "$EVAL" ]; then EVAL="2025 2026"; fi
+          python -m scripts.backtest --eval-seasons $EVAL

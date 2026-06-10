@@ -259,8 +259,20 @@ def build_training_frame(seasons: list[int], data_sources_module) -> pd.DataFram
                 continue
             prior = results[results["round"] < rnd]
 
+            # Point-in-time championship standings reconstructed from prior
+            # rounds, so driver/constructor strength are live training signals
+            # instead of constant zeros the model learns to ignore.
+            if not prior.empty:
+                d_points = prior.groupby("driver_id")["points"].sum()
+                d_pos = d_points.rank(ascending=False, method="min")
+                c_points = prior.groupby("constructor_id")["points"].sum()
+                c_pos = c_points.rank(ascending=False, method="min")
+            else:
+                d_points = d_pos = c_points = c_pos = pd.Series(dtype=float)
+
             for _, r in race_results.iterrows():
                 did = r["driver_id"]
+                cid = r["constructor_id"]
                 d_prior = prior[prior["driver_id"] == did]
                 avg3 = _avg_finish(d_prior, 3)
                 avg5 = _avg_finish(d_prior, 5)
@@ -278,10 +290,14 @@ def build_training_frame(seasons: list[int], data_sources_module) -> pd.DataFram
                 frames.append(
                     {
                         "driver_id": did,
-                        "constructor_id": r["constructor_id"],
+                        "constructor_id": cid,
                         "season": season,
                         "round": rnd,
                         "circuit_id": circuit_id,
+                        "driver_points": float(d_points.get(did, 0.0)),
+                        "driver_position": float(d_pos.get(did, 12.0)),
+                        "constructor_points": float(c_points.get(cid, 0.0)),
+                        "constructor_position": float(c_pos.get(cid, 6.0)),
                         "avg_finish_last3": avg3,
                         "avg_finish_last5": avg5,
                         "dnf_rate_last5": dnf5,
@@ -304,6 +320,13 @@ def build_training_frame(seasons: list[int], data_sources_module) -> pd.DataFram
 
 
 def feature_columns(include_qual: bool = True) -> list[str]:
+    """Model feature list, shared by training and inference.
+
+    Weather and news_factor are intentionally NOT here: they can't be
+    reconstructed historically, so as trained features they'd be constant
+    zeros that LightGBM ignores. They act as post-hoc adjustments in
+    models.rank_predictions / the heuristic instead.
+    """
     cols = [
         "avg_finish_last3",
         "avg_finish_last5",
@@ -316,14 +339,10 @@ def feature_columns(include_qual: bool = True) -> list[str]:
         "is_street",
         "is_high_downforce",
         "is_power_circuit",
-        "rain_probability",
-        "temperature_c",
-        "wind_kph",
         "driver_points",
         "driver_position",
         "constructor_points",
         "constructor_position",
-        "news_factor",
     ]
     if include_qual:
         cols.append("qual_position")
