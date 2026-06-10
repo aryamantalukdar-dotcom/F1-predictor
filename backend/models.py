@@ -147,11 +147,19 @@ class PolePredictor(_BaseLGBM):
 # ---------------------------------------------------------------------------
 
 
+# Weight pulling the race prediction toward a plain recent-form ordering.
+# Walk-forward backtesting showed avg_finish_last5 alone outperforming the
+# model on the Thursday snapshot (Spearman 0.70 vs 0.67), so the ensemble
+# anchors on form and lets the model adjust at the margins.
+FORM_ANCHOR = 0.5
+
+
 def rank_predictions(
     feature_df: pd.DataFrame,
     predictor: _BaseLGBM,
     driver_meta: dict[str, dict],
     dnf_aware: bool = True,
+    form_anchor: float = FORM_ANCHOR,
 ) -> list[dict]:
     """Run the predictor and return a ranked list of {driver_id, predicted_position, win_prob, ...}.
 
@@ -212,6 +220,15 @@ def rank_predictions(
         omask = ~np.isnan(orank)
         if omask.any():
             nudged[omask] = 0.65 * nudged[omask] + 0.35 * orank[omask]
+
+    # 6) Recent-form anchor (race path only — quali has its own dynamics).
+    # See FORM_ANCHOR note above: the baseline ordering is too strong to
+    # override wholesale.
+    if dnf_aware and form_anchor > 0 and "avg_finish_last5" in feature_df.columns:
+        form_rank = (
+            feature_df["avg_finish_last5"].fillna(12.0).rank(method="first").to_numpy(dtype=float)
+        )
+        nudged = (1.0 - form_anchor) * nudged + form_anchor * form_rank
 
     rain_p = (
         float(feature_df["rain_probability"].iloc[0])

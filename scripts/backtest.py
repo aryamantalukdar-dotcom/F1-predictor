@@ -39,6 +39,7 @@ logging.basicConfig(level=logging.WARNING)
 log = logging.getLogger("backtest")
 
 AGE_WEIGHTS = {0: 4.0, 1: 2.0, 2: 1.0, 3: 0.6, 4: 0.4}
+ANCHOR_GRID = (0.3, 0.5, 0.7, 1.0)
 
 
 def _weights(df: pd.DataFrame) -> pd.Series:
@@ -93,6 +94,7 @@ def main() -> int:
     )
 
     stack_scores, raw_scores, base_scores = [], [], []
+    ensemble_scores = {w: [] for w in ANCHOR_GRID}
     pole_hits_stack, pole_hits_raw = [], []
     n_eval = 0
 
@@ -127,12 +129,13 @@ def main() -> int:
         raw_race_vals = race_model.predict(snap_raw)
         raw_rank = {d: r + 1 for r, d in enumerate([drivers[i] for i in np.argsort(raw_race_vals)])}
 
-        # Variant B: full post-hoc stack (production path)
+        # Variant B: post-hoc stack without the form anchor (so the anchor
+        # grid below can sweep weights cleanly on top of it)
         pole_preds = models.rank_predictions(snapshot, pole_model, {}, dnf_aware=False)
         pole_rank = {p["driver_id"]: p["rank"] for p in pole_preds}
         snap_stack = snapshot.copy()
         snap_stack["qual_position"] = snap_stack["driver_id"].map({d: float(r) for d, r in pole_rank.items()})
-        race_preds = models.rank_predictions(snap_stack, race_model, {})
+        race_preds = models.rank_predictions(snap_stack, race_model, {}, form_anchor=0.0)
         stack_rank = {p["driver_id"]: p["rank"] for p in race_preds}
 
         # Pole hits
@@ -151,6 +154,14 @@ def main() -> int:
             stack_scores.append(s)
             raw_scores.append(r)
             base_scores.append(b)
+            # Anchor grid: blend stack rank toward baseline rank at weight w
+            for w in ANCHOR_GRID:
+                blend = {d: (1 - w) * stack_rank[d] + w * base_rank[d] for d in stack_rank}
+                ordered = sorted(blend, key=blend.get)
+                blend_rank = {d: i + 1 for i, d in enumerate(ordered)}
+                e = _score_race(blend_rank, race_rows)
+                if e:
+                    ensemble_scores[w].append(e)
             n_eval += 1
 
     if not stack_scores:
@@ -169,6 +180,13 @@ def main() -> int:
         print(f"{k:<18} {st[k]:>8.3f} {rw[k]:>10.3f} {b[k]:>9.3f}")
     if pole_hits_stack:
         print(f"{'pole_hit':<18} {np.mean(pole_hits_stack):>8.3f} {np.mean(pole_hits_raw):>10.3f} {'—':>9}")
+
+    print("\n=== Form-anchor weight sweep (stack -> baseline blend) ===")
+    print(f"{'metric':<18}" + "".join(f" w={w:>4}" for w in ANCHOR_GRID))
+    print("-" * (18 + 7 * len(ANCHOR_GRID)))
+    aggs = {w: _agg(ensemble_scores[w]) for w in ANCHOR_GRID if ensemble_scores[w]}
+    for k in st:
+        print(f"{k:<18}" + "".join(f" {aggs[w][k]:>6.3f}" for w in aggs))
     return 0
 
 
