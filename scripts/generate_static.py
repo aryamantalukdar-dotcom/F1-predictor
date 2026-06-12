@@ -176,7 +176,19 @@ def _news_section(news: dict, meta: dict, updated: str) -> str:
             f"<div class='news-meta'>{_esc(n.get('source',''))} {('&middot; ' + when) if when else ''}</div></li>"
         )
     ni_html = "".join(ni_items) or "<li class='muted'>No recent news fetched.</li>"
-    meta_str = f"Race model: {_esc(meta.get('race_model',''))} &middot; Pole model: {_esc(meta.get('pole_model',''))} &middot; {_esc(meta.get('n_drivers',''))} drivers" if meta else ""
+    odds_on = bool(meta.get("odds_used"))
+    odds_chip = (
+        f'<span class="signal-chip {("on" if odds_on else "off")}">Odds: {"on" if odds_on else "off"}</span>'
+        if meta
+        else ""
+    )
+    meta_str = (
+        f"Race model: {_esc(meta.get('race_model',''))} &middot; "
+        f"Pole model: {_esc(meta.get('pole_model',''))} &middot; "
+        f"{_esc(meta.get('n_drivers',''))} drivers {odds_chip}"
+        if meta
+        else ""
+    )
     return f"""
     <p class="muted" id="model-meta">{meta_str}</p>
     <p class="muted update-time">Last updated: {_esc(updated)}</p>
@@ -207,6 +219,19 @@ def build_html(data: dict, updated: str) -> str:
     extra_css = """
 .update-time { text-align: right; margin-bottom: 8px; }
 #model-meta { margin: 0 0 4px 0; }
+.signal-chip {
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+.signal-chip.on  { background: var(--good); color: #fff; }
+.signal-chip.off { background: #e3e6ec;   color: #6b7280; }
 """
 
     return f"""<!doctype html>
