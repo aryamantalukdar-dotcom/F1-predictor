@@ -25,13 +25,25 @@ ODDS_API_BASE = "https://api.the-odds-api.com/v4"
 
 
 def _discover_f1_sport_key(api_key: str) -> str | None:
-    """Find the F1 sport key dynamically — keys can change between seasons."""
-    sports = data_sources._http_get(f"{ODDS_API_BASE}/sports/", params={"apiKey": api_key, "all": "true"})
+    """Find the F1 sport key dynamically — keys can change between seasons.
+
+    The Odds API marks a sport ``active: false`` when it has no live event
+    feed at the *moment of the sports-list call*, even if outright markets
+    exist. We list candidate F1 keys (active flag ignored) and let the
+    events endpoint be the real gate.
+    """
+    sports = data_sources._http_get(
+        f"{ODDS_API_BASE}/sports/", params={"apiKey": api_key, "all": "true"}
+    )
+    candidates: list[str] = []
     for s in sports:
         text = f"{s.get('key','')} {s.get('title','')} {s.get('group','')}".lower()
-        if "formula" in text and s.get("active"):
-            return s["key"]
-    return None
+        if "formula" in text or s.get("key", "").startswith("motorsport_f1"):
+            candidates.append(s["key"])
+    # Stable, predictable ordering: exact known key first, then the rest.
+    candidates.sort(key=lambda k: (0 if k == "motorsport_f1" else 1, k))
+    log.info("Odds API F1 candidate keys: %s", candidates or "none")
+    return candidates[0] if candidates else None
 
 
 def get_market_probs(driver_standings: list[dict]) -> dict[str, float]:
@@ -47,20 +59,26 @@ def get_market_probs(driver_standings: list[dict]) -> dict[str, float]:
     def _fetch():
         sport_key = _discover_f1_sport_key(api_key)
         if not sport_key:
-            log.info("No active F1 market found on The Odds API")
+            log.info("No F1 sport key found on The Odds API")
             return {}
 
-        events = data_sources._http_get(
-            f"{ODDS_API_BASE}/sports/{sport_key}/odds",
-            params={
-                "apiKey": api_key,
-                "regions": "eu,uk,us",
-                "markets": "outrights",
-                "oddsFormat": "decimal",
-            },
-        )
-        if not events:
+        try:
+            events = data_sources._http_get(
+                f"{ODDS_API_BASE}/sports/{sport_key}/odds",
+                params={
+                    "apiKey": api_key,
+                    "regions": "eu,uk,us",
+                    "markets": "outrights",
+                    "oddsFormat": "decimal",
+                },
+            )
+        except Exception as e:
+            log.warning("Odds events fetch failed (sport=%s): %s", sport_key, e)
             return {}
+        if not events:
+            log.info("Odds API returned 0 events for %s — no markets posted yet", sport_key)
+            return {}
+        log.info("Odds API: %d event(s) returned for %s", len(events), sport_key)
 
         # Aggregate implied probs per outcome name across all bookmakers of
         # the nearest event (the next race's winner market).
