@@ -36,9 +36,13 @@ def _discover_f1_sport_key(api_key: str) -> str | None:
         f"{ODDS_API_BASE}/sports/", params={"apiKey": api_key, "all": "true"}
     )
     log.info("Odds API: %d total sports returned for this key", len(sports))
-    # Sample what we got back, so a "no F1 found" log makes the cause obvious
-    sample = ", ".join(s.get("key", "?") for s in sports[:25]) or "<empty>"
-    log.info("Odds API sample keys: %s", sample)
+    motor_keys = [
+        s.get("key", "?")
+        for s in sports
+        if any(t in (s.get("key", "") + " " + s.get("title", "") + " " + s.get("group", "")).lower()
+               for t in ("motor", "racing", "f1", "formula", "nascar", "indycar"))
+    ]
+    log.info("Odds API motor-related keys (%d): %s", len(motor_keys), motor_keys or "<none>")
 
     candidates: list[str] = []
     for s in sports:
