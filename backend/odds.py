@@ -35,15 +35,46 @@ def _discover_f1_sport_key(api_key: str) -> str | None:
     sports = data_sources._http_get(
         f"{ODDS_API_BASE}/sports/", params={"apiKey": api_key, "all": "true"}
     )
+    log.info("Odds API: %d total sports returned for this key", len(sports))
+    # Sample what we got back, so a "no F1 found" log makes the cause obvious
+    sample = ", ".join(s.get("key", "?") for s in sports[:25]) or "<empty>"
+    log.info("Odds API sample keys: %s", sample)
+
     candidates: list[str] = []
     for s in sports:
         text = f"{s.get('key','')} {s.get('title','')} {s.get('group','')}".lower()
-        if "formula" in text or s.get("key", "").startswith("motorsport_f1"):
+        if (
+            "formula" in text
+            or s.get("key", "").startswith("motorsport_f1")
+            or "f1" in s.get("key", "").lower().split("_")
+        ):
             candidates.append(s["key"])
-    # Stable, predictable ordering: exact known key first, then the rest.
     candidates.sort(key=lambda k: (0 if k == "motorsport_f1" else 1, k))
     log.info("Odds API F1 candidate keys: %s", candidates or "none")
-    return candidates[0] if candidates else None
+
+    # Direct probe: even if F1 isn't in the sports list (some accounts hide
+    # sports they don't currently subscribe to), the canonical key may still
+    # be reachable on the events endpoint. Try it before giving up.
+    if not candidates:
+        for fallback in ("motorsport_f1", "motorsport_formula_one"):
+            try:
+                evt = data_sources._http_get(
+                    f"{ODDS_API_BASE}/sports/{fallback}/odds",
+                    params={
+                        "apiKey": api_key,
+                        "regions": "eu,uk,us",
+                        "markets": "outrights",
+                        "oddsFormat": "decimal",
+                    },
+                )
+                if isinstance(evt, list):
+                    log.info("Odds API direct probe %s → %d events", fallback, len(evt))
+                    return fallback
+            except Exception as e:
+                log.info("Odds API direct probe %s failed: %s", fallback, e)
+                continue
+        return None
+    return candidates[0]
 
 
 def get_market_probs(driver_standings: list[dict]) -> dict[str, float]:
