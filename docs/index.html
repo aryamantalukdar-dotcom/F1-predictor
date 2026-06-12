@@ -524,6 +524,19 @@ footer {
 
 .update-time { text-align: right; margin-bottom: 8px; }
 #model-meta { margin: 0 0 4px 0; }
+.signal-chip {
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+.signal-chip.on  { background: var(--good); color: #fff; }
+.signal-chip.off { background: #e3e6ec;   color: #6b7280; }
 
   </style>
 </head>
@@ -533,7 +546,7 @@ footer {
       <span class="logo">F1</span>
       <span class="title">Predictor</span>
     </div>
-    <div class="muted" style="font-size:0.8rem">Updated 12 Jun 2026 11:39 UTC</div>
+    <div class="muted" style="font-size:0.8rem">Updated 12 Jun 2026 14:39 UTC</div>
   </header>
 
   <main>
@@ -784,8 +797,8 @@ footer {
     </section>
 
     
-    <p class="muted" id="model-meta">Race model: lightgbm &middot; Pole model: lightgbm &middot; 22 drivers</p>
-    <p class="muted update-time">Last updated: 12 Jun 2026 11:39 UTC</p>
+    <p class="muted" id="model-meta">Race model: lightgbm &middot; Pole model: lightgbm &middot; 22 drivers <span class="signal-chip off">Odds: off</span></p>
+    <p class="muted update-time">Last updated: 12 Jun 2026 14:39 UTC</p>
 
     <section class="card">
       <h2>What's Driving the Prediction</h2>
@@ -796,7 +809,7 @@ footer {
 
     <section class="card">
       <h2>Latest F1 News</h2>
-      <ul id="news-list"><li><a href='https://www.bbc.com/sport/formula1/articles/cevlg742y3do?at_medium=RSS&amp;at_campaign=rss' target='_blank' rel='noopener'>Gasly&#039;s Monaco third place reinstated after appeal</a><div class='news-meta'>BBC Sport &middot; 12 Jun 2026 11:22</div></li><li><a href='https://www.autosport.com/f1/news/alpine-thanks-fia-and-fom-for-transparency-as-gasly-gets-monaco-podium-back/10829464/?utm_source=RSS&amp;utm_medium=referral&amp;utm_campaign=RSS-F1&amp;utm_term=News&amp;utm_content=uk' target='_blank' rel='noopener'>Alpine thanks FIA and FOM for transparency as Gasly gets Monaco GP podium back</a><div class='news-meta'>Autosport.com - Formula 1 - Stories &middot; 12 Jun 2026 10:55</div></li><li><a href='https://www.motorsport.com/f1/news/alpine-thanks-fia-and-fom-for-transparency-as-gasly-gets-monaco-podium-back/10829452/?utm_source=RSS&amp;utm_medium=referral&amp;utm_campaign=RSS-F1&amp;utm_term=News&amp;utm_content=www' target='_blank' rel='noopener'>Alpine thanks FIA and FOM for transparency as Pierre Gasly gets Monaco podium back</a><div class='news-meta'>Motorsport.com - Formula 1 - Stories &middot; 12 Jun 2026 10:49</div></li><li><a href='https://www.autosport.com/f1/news/ferrari-unleashes-major-barcelona-f1-upgrades-as-it-chases-down-mercedes/10829459/?utm_source=RSS&amp;utm_medium=referral&amp;utm_campaign=RSS-F1&amp;utm_term=News&amp;utm_content=uk' target='_blank' rel='noopener'>Ferrari unleashes major F1 car upgrades as it chases down Mercedes at Barcelona GP</a><div class='news-meta'>Autosport.com - Formula 1 - Stories &middot; 12 Jun 2026 10:48</div></li><li><a href='https://www.motorsport.com/f1/news/ferrari-unleashes-major-barcelona-f1-upgrades-as-it-chases-down-mercedes/10829427/?utm_source=RSS&amp;utm_medium=referral&amp;utm_campaign=RSS-F1&amp;utm_term=News&amp;utm_content=www' target='_blank' rel='noopener'>Ferrari unleashes major Barcelona F1 upgrades as it chases down Mercedes</a><div class='news-meta'>Motorsport.com - Formula 1 - Stories &middot; 12 Jun 2026 10:46</div></li><li><a href='https://www.autosport.com/f1/news/pierre-gaslys-monaco-gp-penalty-rescinded-fia-stewards-report-in-full/10829455/?utm_source=RSS&amp;utm_medium=referral&amp;utm_campaign=RSS-F1&amp;utm_term=News&amp;utm_content=uk' target='_blank' rel='noopener'>Gasly’s Monaco GP penalty rescinded: FIA stewards report in full</a><div class='news-meta'>Autosport.com - Formula 1 - Stories &middot; 12 Jun 2026 10:42</div></li><li><a href='https://www.motorsport.com/f1/news/pierre-gaslys-monaco-gp-penalty-rescinded-fia-stewards-report-in-full/10829447/?utm_source=RSS&amp;utm_medium=referral&amp;utm_campaign=RSS-F1&amp;utm_term=News&amp;utm_content=www' target='_blank' rel='noopener'>Pierre Gasly’s Monaco GP penalty rescinded: FIA stewards report in full</a><div class='news-meta'>Motorsport.com - Formula 1 - Stories &middot; 12 Jun 2026 10:41</div></li><li><a href='https://www.autosport.com/f1/news/fia-overturns-gasly-penalties-restores-monaco-podium/10829441/?utm_source=RSS&amp;utm_medium=referral&amp;utm_campaign=RSS-F1&amp;utm_term=News&amp;utm_content=uk' target='_blank' rel='noopener'>Gasly regains Monaco GP podium after FIA stewards rescind pitlane speeding penalties</a><div class='news-meta'>Autosport.com - Formula 1 - Stories &middot; 12 Jun 2026 10:17</div></li><li><a href='https://www.motorsport.com/f1/news/fia-overturns-gasly-penalties-restores-monaco-podium/10829434/?utm_source=RSS&amp;utm_medium=referral&amp;utm_campaign=RSS-F1&amp;utm_term=News&amp;utm_content=www' target='_blank' rel='noopener'>FIA stewards overturn Pierre Gasly&#039;s penalties, restore Monaco GP podium</a><div class='news-meta'>Motorsport.com - Formula 1 - Stories &middot; 12 Jun 2026 10:16</div></li><li><a href='https://www.motorsport.com/f1/news/oscar-piastri-on-monaco-gp-speed-limiter-issue-shouldnt-be-happening-in-formula-1/10829418/?utm_source=RSS&amp;utm_medium=referral&amp;utm_campaign=RSS-F1&amp;utm_term=News&amp;utm_content=www' target='_blank' rel='noopener'>Oscar Piastri on Monaco GP pitlane speed limiter issue: “Shouldn&#039;t be happening in Formula 1”</a><div class='news-meta'>Motorsport.com - Formula 1 - Stories &middot; 12 Jun 2026 09:58</div></li></ul>
+      <ul id="news-list"><li><a href='https://www.motorsport.com/f1/news/guenther-steiner-points-to-mercedes-dynamic-shift-after-kimi-antonelli-dominance/10829559/?utm_source=RSS&amp;utm_medium=referral&amp;utm_campaign=RSS-F1&amp;utm_term=News&amp;utm_content=www' target='_blank' rel='noopener'>Guenther Steiner points to Mercedes dynamic shift after Kimi Antonelli dominance</a><div class='news-meta'>Motorsport.com - Formula 1 - Stories &middot; 12 Jun 2026 14:16</div></li><li><a href='https://www.bbc.com/sport/formula1/articles/cevlg742y3do?at_medium=RSS&amp;at_campaign=rss' target='_blank' rel='noopener'>Gasly&#039;s Monaco third place reinstated after appeal</a><div class='news-meta'>BBC Sport &middot; 12 Jun 2026 13:57</div></li><li><a href='https://www.autosport.com/f1/news/mclaren-red-bull-lodge-intention-to-appeal-pierre-gaslys-right-of-review-win/10829547/?utm_source=RSS&amp;utm_medium=referral&amp;utm_campaign=RSS-F1&amp;utm_term=News&amp;utm_content=uk' target='_blank' rel='noopener'>McLaren, Red Bull lodge intention to appeal Gasly&#039;s Monaco penalty review win</a><div class='news-meta'>Autosport.com - Formula 1 - Stories &middot; 12 Jun 2026 13:13</div></li><li><a href='https://www.motorsport.com/f1/news/mclaren-red-bull-lodge-intention-to-appeal-pierre-gaslys-right-of-review-win/10829538/?utm_source=RSS&amp;utm_medium=referral&amp;utm_campaign=RSS-F1&amp;utm_term=News&amp;utm_content=www' target='_blank' rel='noopener'>McLaren, Red Bull lodge intention to appeal Pierre Gasly&#039;s right of review win</a><div class='news-meta'>Motorsport.com - Formula 1 - Stories &middot; 12 Jun 2026 13:07</div></li><li><a href='https://www.motorsport.com/f1/news/james-vowles-reveals-when-williams-should-unlock-fw48s-full-potential/10829523/?utm_source=RSS&amp;utm_medium=referral&amp;utm_campaign=RSS-F1&amp;utm_term=News&amp;utm_content=www' target='_blank' rel='noopener'>James Vowles reveals when Williams should unlock FW48&#039;s full potential</a><div class='news-meta'>Motorsport.com - Formula 1 - Stories &middot; 12 Jun 2026 12:53</div></li><li><a href='https://www.motorsport.com/f1/news/formula-1-barcelona-gp-fp1-report/10829505/?utm_source=RSS&amp;utm_medium=referral&amp;utm_campaign=RSS-F1&amp;utm_term=News&amp;utm_content=www' target='_blank' rel='noopener'>F1 Barcelona GP: George Russell tops Barcelona first practice</a><div class='news-meta'>Motorsport.com - Formula 1 - Stories &middot; 12 Jun 2026 12:43</div></li><li><a href='https://www.autosport.com/f1/news/f1-barcelona-gp-fp1-report/10829512/?utm_source=RSS&amp;utm_medium=referral&amp;utm_campaign=RSS-F1&amp;utm_term=News&amp;utm_content=uk' target='_blank' rel='noopener'>F1 Barcelona GP: Russell tops first practice from Piastri</a><div class='news-meta'>Autosport.com - Formula 1 - Stories &middot; 12 Jun 2026 12:41</div></li><li><a href='https://www.bbc.com/sport/formula1/articles/c8r2j40x707o?at_medium=RSS&amp;at_campaign=rss' target='_blank' rel='noopener'>Russell fastest in Barcelona first practice</a><div class='news-meta'>BBC Sport &middot; 12 Jun 2026 12:39</div></li><li><a href='https://www.motorsport.com/f1/news/david-croft-aston-martin-has-little-or-nothing-to-celebrate-after-first-2026-f1-point-in-monaco/10829054/?utm_source=RSS&amp;utm_medium=referral&amp;utm_campaign=RSS-F1&amp;utm_term=News&amp;utm_content=www' target='_blank' rel='noopener'>David Croft: Aston Martin has &quot;little or nothing to celebrate&quot; after first 2026 F1 point in Monaco</a><div class='news-meta'>Motorsport.com - Formula 1 - Stories &middot; 12 Jun 2026 12:38</div></li><li><a href='https://www.autosport.com/f1/news/f1-to-review-pitlane-procedures-after-pierre-gaslys-monaco-gp-podium-reinstated/10829499/?utm_source=RSS&amp;utm_medium=referral&amp;utm_campaign=RSS-F1&amp;utm_term=News&amp;utm_content=uk' target='_blank' rel='noopener'>F1 to review pitlane procedures after Gasly&#039;s Monaco GP podium reinstated</a><div class='news-meta'>Autosport.com - Formula 1 - Stories &middot; 12 Jun 2026 12:18</div></li></ul>
     </section>
   </main>
 
