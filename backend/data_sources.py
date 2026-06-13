@@ -52,14 +52,17 @@ def _http_get(url: str, params: dict | None = None, timeout: float = 8.0) -> dic
     can go fully unreachable for short periods). Retry up to 3 times with
     backoff at 1s, 2s. Per-attempt timeout kept short (8s) so the worst case
     is ~28s of waiting before we bail and let the caller handle it.
+
+    4xx auth/not-found errors fail fast — retrying won't change a 401, 403,
+    or 404. Only transient classes (5xx, 429, transport, timeout) loop.
     """
     last_exc: Exception | None = None
     for attempt in range(3):
         try:
             with httpx.Client(timeout=timeout, headers={"User-Agent": "f1-predictor/1.0"}) as c:
                 r = c.get(url, params=params)
-                # 404 is a real error (e.g. season not yet), fail fast.
-                if r.status_code == 404:
+                # Terminal 4xx: don't waste time retrying.
+                if r.status_code in (401, 403, 404):
                     r.raise_for_status()
                 if r.status_code >= 500 or r.status_code == 429:
                     raise httpx.HTTPStatusError(
@@ -68,8 +71,7 @@ def _http_get(url: str, params: dict | None = None, timeout: float = 8.0) -> dic
                 r.raise_for_status()
                 return r.json()
         except httpx.HTTPStatusError as e:
-            # Don't retry 404; it's terminal.
-            if e.response is not None and e.response.status_code == 404:
+            if e.response is not None and e.response.status_code in (401, 403, 404):
                 raise
             last_exc = e
         except (httpx.TransportError, httpx.TimeoutException) as e:
@@ -399,33 +401,61 @@ def get_latest_session_meta() -> dict | None:
 
 
 def get_practice_pace() -> pd.DataFrame:
-    """Aggregate per-driver practice pace for the current/latest race meeting.
+    """Aggregate per-driver practice pace for the most recent race meeting.
 
-    Pulls lap times for every Practice session of the meeting via OpenF1,
-    filters out in/out laps and obvious outliers (>200s), and returns one
-    row per driver with their best and median clean lap.
+    Pulls clean lap times for every Practice session of the current/most
+    recent meeting via OpenF1 and returns per-driver best + median.
 
-    Returns a DataFrame with columns: driver_code, best_lap_s, median_lap_s,
-    n_laps. Empty if no practice has happened yet or OpenF1 is unreachable.
+    OpenF1 dropped support for the ``meeting_key=latest`` magic value
+    (returns 401 as of mid-2026), so we discover the right meeting by
+    querying sessions for the current year, filtering to Practice, and
+    taking the latest one whose date is on/before today. Falls back to
+    the prior year if the new season hasn't produced practice yet.
+
+    Returns a DataFrame with columns: driver_code, best_lap_s,
+    median_lap_s, n_laps. Empty when no practice data is available or
+    OpenF1 is unreachable.
     """
     def _fetch():
-        meetings = _http_get(f"{OPENF1_BASE}/meetings", params={"meeting_key": "latest"})
-        if not meetings:
+        today = dt.date.today()
+        sessions: list[dict] = []
+        for year in (today.year, today.year - 1):
+            try:
+                year_sessions = _http_get(
+                    f"{OPENF1_BASE}/sessions",
+                    params={"year": year, "session_type": "Practice"},
+                )
+            except Exception as e:
+                log.warning("openf1 sessions fetch failed for %s: %s", year, e)
+                continue
+            if year_sessions:
+                sessions = year_sessions
+                break
+        if not sessions:
             return pd.DataFrame()
-        meeting_key = meetings[0]["meeting_key"]
 
-        sessions = _http_get(f"{OPENF1_BASE}/sessions", params={"meeting_key": meeting_key})
-        practice_sessions = [s for s in sessions if s.get("session_type") == "Practice"]
-        if not practice_sessions:
+        def _start(s: dict) -> str:
+            return s.get("date_start") or ""
+
+        # Pick the latest meeting that has *already started* (so we don't try
+        # to read laps from a session that hasn't run yet).
+        cutoff = (today + dt.timedelta(days=1)).isoformat()
+        sessions_so_far = [s for s in sessions if _start(s) and _start(s) < cutoff]
+        if not sessions_so_far:
             return pd.DataFrame()
+        latest_meeting = max(s.get("meeting_key") for s in sessions_so_far)
+        meeting_sessions = [s for s in sessions_so_far if s.get("meeting_key") == latest_meeting]
 
-        # Driver number → 3-letter code mapping (stable across the weekend)
-        latest_key = max(s["session_key"] for s in practice_sessions)
-        drivers = _http_get(f"{OPENF1_BASE}/drivers", params={"session_key": latest_key})
+        latest_key = max(s["session_key"] for s in meeting_sessions)
+        try:
+            drivers = _http_get(f"{OPENF1_BASE}/drivers", params={"session_key": latest_key})
+        except Exception as e:
+            log.warning("openf1 drivers fetch failed: %s", e)
+            return pd.DataFrame()
         num_to_code = {d["driver_number"]: d.get("name_acronym", "") for d in drivers}
 
         all_laps = []
-        for sess in practice_sessions:
+        for sess in meeting_sessions:
             try:
                 laps = _http_get(f"{OPENF1_BASE}/laps", params={"session_key": sess["session_key"]})
             except Exception as e:

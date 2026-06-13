@@ -25,60 +25,24 @@ ODDS_API_BASE = "https://api.the-odds-api.com/v4"
 
 
 def _discover_f1_sport_key(api_key: str) -> str | None:
-    """Find the F1 sport key dynamically — keys can change between seasons.
+    """Find the F1 sport key on The Odds API.
 
-    The Odds API marks a sport ``active: false`` when it has no live event
-    feed at the *moment of the sports-list call*, even if outright markets
-    exist. We list candidate F1 keys (active flag ignored) and let the
-    events endpoint be the real gate.
+    The Odds API free tier is ball-sports only — F1 outright markets are
+    behind a paid tier. We still probe for it dynamically so the signal
+    lights up automatically if an upgraded plan is wired in later.
     """
-    sports = data_sources._http_get(
-        f"{ODDS_API_BASE}/sports/", params={"apiKey": api_key, "all": "true"}
-    )
-    log.info("Odds API: %d total sports returned for this key", len(sports))
-    motor_keys = [
-        s.get("key", "?")
-        for s in sports
-        if any(t in (s.get("key", "") + " " + s.get("title", "") + " " + s.get("group", "")).lower()
-               for t in ("motor", "racing", "f1", "formula", "nascar", "indycar"))
-    ]
-    log.info("Odds API motor-related keys (%d): %s", len(motor_keys), motor_keys or "<none>")
-
-    candidates: list[str] = []
+    try:
+        sports = data_sources._http_get(
+            f"{ODDS_API_BASE}/sports/", params={"apiKey": api_key, "all": "true"}
+        )
+    except Exception as e:
+        log.warning("Odds API sports list failed: %s", e)
+        return None
     for s in sports:
         text = f"{s.get('key','')} {s.get('title','')} {s.get('group','')}".lower()
-        if (
-            "formula" in text
-            or s.get("key", "").startswith("motorsport_f1")
-            or "f1" in s.get("key", "").lower().split("_")
-        ):
-            candidates.append(s["key"])
-    candidates.sort(key=lambda k: (0 if k == "motorsport_f1" else 1, k))
-    log.info("Odds API F1 candidate keys: %s", candidates or "none")
-
-    # Direct probe: even if F1 isn't in the sports list (some accounts hide
-    # sports they don't currently subscribe to), the canonical key may still
-    # be reachable on the events endpoint. Try it before giving up.
-    if not candidates:
-        for fallback in ("motorsport_f1", "motorsport_formula_one"):
-            try:
-                evt = data_sources._http_get(
-                    f"{ODDS_API_BASE}/sports/{fallback}/odds",
-                    params={
-                        "apiKey": api_key,
-                        "regions": "eu,uk,us",
-                        "markets": "outrights",
-                        "oddsFormat": "decimal",
-                    },
-                )
-                if isinstance(evt, list):
-                    log.info("Odds API direct probe %s → %d events", fallback, len(evt))
-                    return fallback
-            except Exception as e:
-                log.info("Odds API direct probe %s failed: %s", fallback, e)
-                continue
-        return None
-    return candidates[0]
+        if "formula" in text or s.get("key", "").startswith("motorsport_f1"):
+            return s["key"]
+    return None
 
 
 def get_market_probs(driver_standings: list[dict]) -> dict[str, float]:
