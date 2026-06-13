@@ -177,15 +177,21 @@ def _news_section(news: dict, meta: dict, updated: str) -> str:
         )
     ni_html = "".join(ni_items) or "<li class='muted'>No recent news fetched.</li>"
     odds_on = bool(meta.get("odds_used"))
+    qual_on = bool(meta.get("qual_known"))
     odds_chip = (
         f'<span class="signal-chip {("on" if odds_on else "off")}">Odds: {"on" if odds_on else "off"}</span>'
+        if meta
+        else ""
+    )
+    qual_chip = (
+        f'<span class="signal-chip {("on" if qual_on else "off")}">Quali: {"in" if qual_on else "pending"}</span>'
         if meta
         else ""
     )
     meta_str = (
         f"Race model: {_esc(meta.get('race_model',''))} &middot; "
         f"Pole model: {_esc(meta.get('pole_model',''))} &middot; "
-        f"{_esc(meta.get('n_drivers',''))} drivers {odds_chip}"
+        f"{_esc(meta.get('n_drivers',''))} drivers {qual_chip} {odds_chip}"
         if meta
         else ""
     )

@@ -214,10 +214,13 @@ def predict_next_race(use_models: bool = True) -> dict[str, Any]:
     # ---- Two-stage: before qualifying has run, use the pole model's
     # predicted grid as the race model's qual_position input. After Saturday
     # the actual classification (already in the frame) takes precedence.
-    if feature_df["qual_position"].isna().all() and pole_predictions:
+    qual_is_real = not feature_df["qual_position"].isna().all()
+    if not qual_is_real and pole_predictions:
         predicted_quali = {p["driver_id"]: float(p["rank"]) for p in pole_predictions}
         feature_df["qual_position"] = feature_df["driver_id"].map(predicted_quali)
         log.info("No qualifying yet — feeding predicted grid into the race model")
+    elif qual_is_real:
+        log.info("Real qualifying data found — anchoring race prediction on grid")
 
     # ---- Race finish prediction ----
     race_predictions: list[dict]
@@ -225,7 +228,9 @@ def predict_next_race(use_models: bool = True) -> dict[str, Any]:
         log.info("Loading trained race model")
         race_model = models.RacePredictor()
         race_model.load(models.race_model_path())
-        race_predictions = models.rank_predictions(feature_df, race_model, driver_meta)
+        race_predictions = models.rank_predictions(
+            feature_df, race_model, driver_meta, qual_is_real=qual_is_real
+        )
         race_model_used = "lightgbm"
     else:
         log.info("No trained race model found; using heuristic fallback")
@@ -251,5 +256,6 @@ def predict_next_race(use_models: bool = True) -> dict[str, Any]:
             "pole_model": pole_model_used,
             "n_drivers": len(feature_df),
             "odds_used": odds_used,
+            "qual_known": qual_is_real,
         },
     }

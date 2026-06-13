@@ -162,6 +162,7 @@ def rank_predictions(
     driver_meta: dict[str, dict],
     dnf_aware: bool = True,
     form_anchor: float = FORM_ANCHOR,
+    qual_is_real: bool = False,
 ) -> list[dict]:
     """Run the predictor and return a ranked list of {driver_id, predicted_position, win_prob, ...}.
 
@@ -214,15 +215,34 @@ def rank_predictions(
         blend = np.where(dnf_rate > 0.4, 0.0, blend)
         nudged = (1 - blend) * nudged + blend * champ_pos
 
-    # 5) Recent-form anchor (race path only — quali has its own dynamics).
-    # See FORM_ANCHOR note above: the baseline ordering is too strong to
-    # override wholesale. Applied BEFORE the odds blend so market information
-    # acts on the anchored prediction instead of being diluted by it.
-    if dnf_aware and form_anchor > 0 and "avg_finish_last5" in feature_df.columns:
+    # 5) Grid anchor — once qualifying is done, starting position is the
+    # single strongest predictor of race finish (especially on street
+    # circuits where overtaking is costly). Applied BEFORE form anchor so
+    # both compete cleanly. Skipped pre-quali (qual_position there is just
+    # our pole model's prediction and would double-count the LightGBM
+    # output's use of the same feature).
+    qual_known_in_run = qual_is_real and "qual_position" in feature_df.columns
+    if dnf_aware and qual_known_in_run:
+        grid = feature_df["qual_position"].fillna(12.0).to_numpy(dtype=float)
+        is_street = (
+            feature_df.get("is_street", pd.Series([0] * len(feature_df)))
+            .fillna(0)
+            .to_numpy(dtype=float)
+        )
+        # Overtaking is much harder on street circuits → grid matters more.
+        grid_w = 0.30 + 0.15 * is_street
+        nudged = (1.0 - grid_w) * nudged + grid_w * grid
+
+    # 6) Recent-form anchor (race path only — quali has its own dynamics).
+    # See FORM_ANCHOR note above: the Thursday-snapshot baseline ordering is
+    # too strong to override wholesale. Once real qualifying is in, drop the
+    # weight sharply — grid is now doing the anchoring instead.
+    effective_form_anchor = form_anchor * (0.35 if qual_known_in_run else 1.0)
+    if dnf_aware and effective_form_anchor > 0 and "avg_finish_last5" in feature_df.columns:
         form_rank = (
             feature_df["avg_finish_last5"].fillna(12.0).rank(method="first").to_numpy(dtype=float)
         )
-        nudged = (1.0 - form_anchor) * nudged + form_anchor * form_rank
+        nudged = (1.0 - effective_form_anchor) * nudged + effective_form_anchor * form_rank
 
     # 6) Betting-market blend. When odds are available, pull toward the
     # market's implied ranking — bookmakers aggregate information (testing
