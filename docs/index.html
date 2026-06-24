@@ -329,24 +329,6 @@ td.win-prob {
   font-variant-numeric: tabular-nums;
 }
 
-td.factor {
-  width: 90px;
-  text-align: right;
-  font-variant-numeric: tabular-nums;
-}
-
-.factor-pos {
-  color: var(--good);
-  font-weight: 600;
-}
-.factor-neg {
-  color: var(--bad);
-  font-weight: 600;
-}
-.factor-neutral {
-  color: var(--text-dim);
-}
-
 .podium-1 td.rank {
   color: var(--pole-gold);
 }
@@ -367,30 +349,10 @@ td.factor {
 }
 
 /* News */
-.narrative {
-  font-size: 1rem;
-  line-height: 1.6;
-  color: var(--text);
-}
-
-#storylines,
 #news-list {
   list-style: none;
   padding: 0;
   margin: 0;
-}
-
-#storylines li {
-  padding: 6px 0 6px 18px;
-  position: relative;
-  color: var(--text);
-}
-
-#storylines li::before {
-  content: "→";
-  position: absolute;
-  left: 0;
-  color: var(--accent);
 }
 
 #news-list li {
@@ -498,9 +460,6 @@ footer {
   td.win-prob {
     width: 78px;
   }
-  td.factor {
-    width: 60px;
-  }
   .win-prob-bar {
     display: none; /* Hide bar on phone — text remains */
   }
@@ -508,11 +467,6 @@ footer {
 
 /* ---------- Very narrow phones (<= 420px) ---------- */
 @media (max-width: 420px) {
-  /* Hide news factor column entirely on tiny screens */
-  th.col-factor,
-  td.factor {
-    display: none;
-  }
   table {
     min-width: 360px;
   }
@@ -546,7 +500,7 @@ footer {
       <span class="logo">F1</span>
       <span class="title">Predictor</span>
     </div>
-    <div class="muted" style="font-size:0.8rem">Updated 24 Jun 2026 03:39 UTC</div>
+    <div class="muted" style="font-size:0.8rem">Updated 24 Jun 2026 19:47 UTC</div>
   </header>
 
   <main>
@@ -583,7 +537,7 @@ footer {
     <div class="weather-grid">
       <div class="weather-stat">
         <div class="label">Rain probability</div>
-        <div class="value ">5%</div>
+        <div class="value ">10%</div>
       </div>
       <div class="weather-stat">
         <div class="label">Temperature</div>
@@ -591,11 +545,11 @@ footer {
       </div>
       <div class="weather-stat">
         <div class="label">Precipitation</div>
-        <div class="value">0.0 mm</div>
+        <div class="value">0.3 mm</div>
       </div>
       <div class="weather-stat">
         <div class="label">Wind</div>
-        <div class="value">12 kph</div>
+        <div class="value">8 kph</div>
       </div>
     </div>
     <p class="muted" style="margin-top:14px">Open-Meteo forecast</p>
@@ -612,7 +566,7 @@ footer {
       <thead>
         <tr>
           <th>Pos</th><th>Code</th><th>Driver</th><th>Team</th>
-          <th>Win prob</th><th class="col-factor">News factor</th>
+          <th>Win prob</th>
         </tr>
       </thead>
       <tbody>
@@ -621,72 +575,63 @@ footer {
           <td class="code">ANT</td>
           <td class="driver-name">Andrea Kimi Antonelli</td>
           <td class="team-name">Mercedes</td>
-          <td class="win-prob">44.9%<span class="win-prob-bar" style="width:80px"></span></td>
-          <td class="factor factor-neutral">0.00</td>
+          <td class="win-prob">43.5%<span class="win-prob-bar" style="width:80px"></span></td>
         </tr>
         <tr class="podium-2">
           <td class="rank">P2</td>
           <td class="code">RUS</td>
           <td class="driver-name">George Russell</td>
           <td class="team-name">Mercedes</td>
-          <td class="win-prob">24.8%<span class="win-prob-bar" style="width:44px"></span></td>
-          <td class="factor factor-neutral">0.00</td>
+          <td class="win-prob">24.6%<span class="win-prob-bar" style="width:45px"></span></td>
         </tr>
         <tr class="podium-3">
           <td class="rank">P3</td>
           <td class="code">HAM</td>
           <td class="driver-name">Lewis Hamilton</td>
           <td class="team-name">Ferrari</td>
-          <td class="win-prob">14.0%<span class="win-prob-bar" style="width:25px"></span></td>
-          <td class="factor factor-neutral">0.00</td>
+          <td class="win-prob">14.2%<span class="win-prob-bar" style="width:26px"></span></td>
         </tr>
         <tr class="">
           <td class="rank">P4</td>
           <td class="code">LEC</td>
           <td class="driver-name">Charles Leclerc</td>
           <td class="team-name">Ferrari</td>
-          <td class="win-prob">11.4%<span class="win-prob-bar" style="width:20px"></span></td>
-          <td class="factor factor-neutral">0.00</td>
+          <td class="win-prob">11.7%<span class="win-prob-bar" style="width:21px"></span></td>
         </tr>
         <tr class="">
           <td class="rank">P5</td>
           <td class="code">NOR</td>
           <td class="driver-name">Lando Norris</td>
           <td class="team-name">McLaren</td>
-          <td class="win-prob">2.6%<span class="win-prob-bar" style="width:5px"></span></td>
-          <td class="factor factor-neutral">0.00</td>
+          <td class="win-prob">3.2%<span class="win-prob-bar" style="width:6px"></span></td>
         </tr>
         <tr class="">
           <td class="rank">P6</td>
           <td class="code">VER</td>
           <td class="driver-name">Max Verstappen</td>
           <td class="team-name">Red Bull</td>
-          <td class="win-prob">1.7%<span class="win-prob-bar" style="width:3px"></span></td>
-          <td class="factor factor-neutral">0.00</td>
+          <td class="win-prob">2.0%<span class="win-prob-bar" style="width:4px"></span></td>
         </tr>
         <tr class="">
           <td class="rank">P7</td>
           <td class="code">GAS</td>
           <td class="driver-name">Pierre Gasly</td>
           <td class="team-name">Alpine F1 Team</td>
-          <td class="win-prob">0.4%<span class="win-prob-bar" style="width:1px"></span></td>
-          <td class="factor factor-neutral">0.00</td>
+          <td class="win-prob">0.6%<span class="win-prob-bar" style="width:1px"></span></td>
         </tr>
         <tr class="">
           <td class="rank">P8</td>
           <td class="code">PIA</td>
           <td class="driver-name">Oscar Piastri</td>
           <td class="team-name">McLaren</td>
-          <td class="win-prob">0.1%<span class="win-prob-bar" style="width:0px"></span></td>
-          <td class="factor factor-neutral">0.00</td>
+          <td class="win-prob">0.2%<span class="win-prob-bar" style="width:0px"></span></td>
         </tr>
         <tr class="">
           <td class="rank">P9</td>
           <td class="code">COL</td>
           <td class="driver-name">Franco Colapinto</td>
           <td class="team-name">Alpine F1 Team</td>
-          <td class="win-prob">0.0%<span class="win-prob-bar" style="width:0px"></span></td>
-          <td class="factor factor-neutral">0.00</td>
+          <td class="win-prob">0.1%<span class="win-prob-bar" style="width:0px"></span></td>
         </tr>
         <tr class="">
           <td class="rank">P10</td>
@@ -694,7 +639,6 @@ footer {
           <td class="driver-name">Oliver Bearman</td>
           <td class="team-name">Haas F1 Team</td>
           <td class="win-prob">0.0%<span class="win-prob-bar" style="width:0px"></span></td>
-          <td class="factor factor-neutral">0.00</td>
         </tr>
         <tr class="">
           <td class="rank">P11</td>
@@ -702,7 +646,6 @@ footer {
           <td class="driver-name">Liam Lawson</td>
           <td class="team-name">RB F1 Team</td>
           <td class="win-prob">0.0%<span class="win-prob-bar" style="width:0px"></span></td>
-          <td class="factor factor-neutral">0.00</td>
         </tr>
         <tr class="">
           <td class="rank">P12</td>
@@ -710,7 +653,6 @@ footer {
           <td class="driver-name">Arvid Lindblad</td>
           <td class="team-name">RB F1 Team</td>
           <td class="win-prob">0.0%<span class="win-prob-bar" style="width:0px"></span></td>
-          <td class="factor factor-neutral">0.00</td>
         </tr>
         <tr class="">
           <td class="rank">P13</td>
@@ -718,7 +660,6 @@ footer {
           <td class="driver-name">Carlos Sainz</td>
           <td class="team-name">Williams</td>
           <td class="win-prob">0.0%<span class="win-prob-bar" style="width:0px"></span></td>
-          <td class="factor factor-neutral">0.00</td>
         </tr>
         <tr class="">
           <td class="rank">P14</td>
@@ -726,7 +667,6 @@ footer {
           <td class="driver-name">Esteban Ocon</td>
           <td class="team-name">Haas F1 Team</td>
           <td class="win-prob">0.0%<span class="win-prob-bar" style="width:0px"></span></td>
-          <td class="factor factor-neutral">0.00</td>
         </tr>
         <tr class="">
           <td class="rank">P15</td>
@@ -734,7 +674,6 @@ footer {
           <td class="driver-name">Isack Hadjar</td>
           <td class="team-name">Red Bull</td>
           <td class="win-prob">0.0%<span class="win-prob-bar" style="width:0px"></span></td>
-          <td class="factor factor-neutral">0.00</td>
         </tr>
         <tr class="">
           <td class="rank">P16</td>
@@ -742,7 +681,6 @@ footer {
           <td class="driver-name">Gabriel Bortoleto</td>
           <td class="team-name">Audi</td>
           <td class="win-prob">0.0%<span class="win-prob-bar" style="width:0px"></span></td>
-          <td class="factor factor-neutral">0.00</td>
         </tr>
         <tr class="">
           <td class="rank">P17</td>
@@ -750,7 +688,6 @@ footer {
           <td class="driver-name">Nico Hülkenberg</td>
           <td class="team-name">Audi</td>
           <td class="win-prob">0.0%<span class="win-prob-bar" style="width:0px"></span></td>
-          <td class="factor factor-neutral">0.00</td>
         </tr>
         <tr class="">
           <td class="rank">P18</td>
@@ -758,7 +695,6 @@ footer {
           <td class="driver-name">Alexander Albon</td>
           <td class="team-name">Williams</td>
           <td class="win-prob">0.0%<span class="win-prob-bar" style="width:0px"></span></td>
-          <td class="factor factor-neutral">0.00</td>
         </tr>
         <tr class="">
           <td class="rank">P19</td>
@@ -766,7 +702,6 @@ footer {
           <td class="driver-name">Sergio Pérez</td>
           <td class="team-name">Cadillac F1 Team</td>
           <td class="win-prob">0.0%<span class="win-prob-bar" style="width:0px"></span></td>
-          <td class="factor factor-neutral">0.00</td>
         </tr>
         <tr class="">
           <td class="rank">P20</td>
@@ -774,7 +709,6 @@ footer {
           <td class="driver-name">Fernando Alonso</td>
           <td class="team-name">Aston Martin</td>
           <td class="win-prob">0.0%<span class="win-prob-bar" style="width:0px"></span></td>
-          <td class="factor factor-neutral">0.00</td>
         </tr>
         <tr class="">
           <td class="rank">P21</td>
@@ -782,7 +716,6 @@ footer {
           <td class="driver-name">Valtteri Bottas</td>
           <td class="team-name">Cadillac F1 Team</td>
           <td class="win-prob">0.0%<span class="win-prob-bar" style="width:0px"></span></td>
-          <td class="factor factor-neutral">0.00</td>
         </tr>
         <tr class="">
           <td class="rank">P22</td>
@@ -790,7 +723,6 @@ footer {
           <td class="driver-name">Lance Stroll</td>
           <td class="team-name">Aston Martin</td>
           <td class="win-prob">0.0%<span class="win-prob-bar" style="width:0px"></span></td>
-          <td class="factor factor-neutral">0.00</td>
         </tr></tbody>
     </table>
     </div>
@@ -798,25 +730,18 @@ footer {
 
     
     <p class="muted" id="model-meta">Race model: lightgbm &middot; Pole model: lightgbm &middot; 22 drivers <span class="signal-chip off">Quali: pending</span> <span class="signal-chip off">Odds: off</span></p>
-    <p class="muted update-time">Last updated: 24 Jun 2026 03:39 UTC</p>
-
-    <section class="card">
-      <h2>What's Driving the Prediction</h2>
-      <p class="narrative">News analysis temporarily unavailable.</p>
-      <h3>Key storylines</h3>
-      <ul id="storylines"><li class='muted'>No major storylines detected.</li></ul>
-    </section>
+    <p class="muted update-time">Last updated: 24 Jun 2026 19:47 UTC</p>
 
     <section class="card">
       <h2>Latest F1 News</h2>
-      <ul id="news-list"><li><a href='https://www.motorsport.com/f1/news/lando-norris-gets-first-look-at-madame-tussauds-waxwork-as-he-donates-race-suit/10832764/?utm_source=RSS&amp;utm_medium=referral&amp;utm_campaign=RSS-F1&amp;utm_term=News&amp;utm_content=www' target='_blank' rel='noopener'>Lando Norris gets first look at Madame Tussauds waxwork as he donates race suit</a><div class='news-meta'>Motorsport.com - Formula 1 - Stories &middot; 23 Jun 2026 23:11</div></li><li><a href='https://www.motorsport.com/f1/news/mclaren-f1-fans-praise-lovable-lando-norris-and-oscar-piastri-after-viral-video/10832631/?utm_source=RSS&amp;utm_medium=referral&amp;utm_campaign=RSS-F1&amp;utm_term=News&amp;utm_content=www' target='_blank' rel='noopener'>McLaren F1 fans praise &quot;lovable&quot; Lando Norris and Oscar Piastri after viral video</a><div class='news-meta'>Motorsport.com - Formula 1 - Stories &middot; 23 Jun 2026 22:41</div></li><li><a href='https://www.motorsport.com/f1/news/guenther-steiner-warns-toto-wolff-will-use-mercedes-team-orders-if-ferrari-threat-grows/10832433/?utm_source=RSS&amp;utm_medium=referral&amp;utm_campaign=RSS-F1&amp;utm_term=News&amp;utm_content=www' target='_blank' rel='noopener'>Guenther Steiner warns Toto Wolff will use Mercedes team orders if Ferrari threat grows</a><div class='news-meta'>Motorsport.com - Formula 1 - Stories &middot; 23 Jun 2026 22:08</div></li><li><a href='https://www.motorsport.com/f1/news/mclaren-trial-upside-down-rear-wing-f1-austrian-gp/10832747/?utm_source=RSS&amp;utm_medium=referral&amp;utm_campaign=RSS-F1&amp;utm_term=News&amp;utm_content=www' target='_blank' rel='noopener'>McLaren to trial upside-down rear wing at F1&#039;s Austrian GP</a><div class='news-meta'>Motorsport.com - Formula 1 - Stories &middot; 23 Jun 2026 18:44</div></li><li><a href='https://www.autosport.com/f1/news/audi-surprises-rivals-as-it-ran-upgraded-f1-engine-at-barcelona-gp-after-aduo-verdict/10832722/?utm_source=RSS&amp;utm_medium=referral&amp;utm_campaign=RSS-F1&amp;utm_term=News&amp;utm_content=uk' target='_blank' rel='noopener'>Audi surprises rivals as it ran upgraded F1 engine at Barcelona GP after ADUO verdict</a><div class='news-meta'>Autosport.com - Formula 1 - Stories &middot; 23 Jun 2026 15:53</div></li><li><a href='https://www.motorsport.com/f1/news/shock-as-audi-ran-upgraded-f1-engine-at-barcelona-gp-after-aduo-verdict/10832720/?utm_source=RSS&amp;utm_medium=referral&amp;utm_campaign=RSS-F1&amp;utm_term=News&amp;utm_content=www' target='_blank' rel='noopener'>Shock as Audi ran upgraded F1 engine at Barcelona GP after ADUO verdict</a><div class='news-meta'>Motorsport.com - Formula 1 - Stories &middot; 23 Jun 2026 15:49</div></li><li><a href='https://www.motorsport.com/f1/news/from-simulator-to-stopwatch-the-creative-evidence-teams-use-to-dispute-f1-race-results/10832415/?utm_source=RSS&amp;utm_medium=referral&amp;utm_campaign=RSS-F1&amp;utm_term=News&amp;utm_content=www' target='_blank' rel='noopener'>From simulator to stopwatch: the creative evidence teams have used to dispute F1 race results</a><div class='news-meta'>Motorsport.com - Formula 1 - Stories &middot; 23 Jun 2026 15:17</div></li><li><a href='https://www.autosport.com/f1/news/tue-from-simulator-to-stopwatch-the-creative-evidence-teams-have-used-to-dispute-f1-race-results/10832610/?utm_source=RSS&amp;utm_medium=referral&amp;utm_campaign=RSS-F1&amp;utm_term=News&amp;utm_content=uk' target='_blank' rel='noopener'>From simulator to stopwatch: The creative evidence teams have used to dispute F1 race results</a><div class='news-meta'>Autosport.com - Formula 1 - Stories &middot; 23 Jun 2026 13:51</div></li><li><a href='https://www.motorsport.com/f1/news/cadillac-reveals-substantial-upgrade-package-for-f1-austrian-gp/10832688/?utm_source=RSS&amp;utm_medium=referral&amp;utm_campaign=RSS-F1&amp;utm_term=News&amp;utm_content=www' target='_blank' rel='noopener'>Cadillac reveals “substantial upgrade package” for F1 Austrian GP</a><div class='news-meta'>Motorsport.com - Formula 1 - Stories &middot; 23 Jun 2026 13:44</div></li><li><a href='https://www.autosport.com/f1/news/f1-revisits-wet-weather-boost-mode-as-fia-ratifies-rule-changes/10832646/?utm_source=RSS&amp;utm_medium=referral&amp;utm_campaign=RSS-F1&amp;utm_term=News&amp;utm_content=uk' target='_blank' rel='noopener'>FIA confirms 2027 F1 power unit changes</a><div class='news-meta'>Autosport.com - Formula 1 - Stories &middot; 23 Jun 2026 11:21</div></li></ul>
+      <ul id="news-list"><li><a href='https://www.motorsport.com/f1/news/sky-sports-f1-broadcaster-confirms-exit/10832939/?utm_source=RSS&amp;utm_medium=referral&amp;utm_campaign=RSS-F1&amp;utm_term=News&amp;utm_content=www' target='_blank' rel='noopener'>Sky Sports F1 broadcaster confirms exit</a><div class='news-meta'>Motorsport.com - Formula 1 - Stories &middot; 24 Jun 2026 16:05</div></li><li><a href='https://www.motorsport.com/f1/news/five-things-to-look-out-for-at-the-f1-austrian-gp/10832903/?utm_source=RSS&amp;utm_medium=referral&amp;utm_campaign=RSS-F1&amp;utm_term=News&amp;utm_content=www' target='_blank' rel='noopener'>Five things to look out for at the F1 Austrian GP</a><div class='news-meta'>Motorsport.com - Formula 1 - Stories &middot; 24 Jun 2026 15:38</div></li><li><a href='https://www.motorsport.com/f1/news/liam-lawson-opens-up-on-toxic-f1-social-media-after-online-abuse/10832601/?utm_source=RSS&amp;utm_medium=referral&amp;utm_campaign=RSS-F1&amp;utm_term=News&amp;utm_content=www' target='_blank' rel='noopener'>Liam Lawson opens up on toxic F1 social media after online abuse</a><div class='news-meta'>Motorsport.com - Formula 1 - Stories &middot; 24 Jun 2026 15:04</div></li><li><a href='https://www.motorsport.com/f1/news/how-anthoine-huberts-death-changed-sebastian-vettel/10832897/?utm_source=RSS&amp;utm_medium=referral&amp;utm_campaign=RSS-F1&amp;utm_term=News&amp;utm_content=www' target='_blank' rel='noopener'>How Anthoine Hubert’s death changed Sebastian Vettel</a><div class='news-meta'>Motorsport.com - Formula 1 - Stories &middot; 24 Jun 2026 13:45</div></li><li><a href='https://www.motorsport.com/f1/news/carlos-sainz-even-without-extra-weight-williams-is-not-where-we-promised-wed-be/10832597/?utm_source=RSS&amp;utm_medium=referral&amp;utm_campaign=RSS-F1&amp;utm_term=News&amp;utm_content=www' target='_blank' rel='noopener'>Carlos Sainz: Even without extra weight, Williams is “not where we promised we’d be”</a><div class='news-meta'>Motorsport.com - Formula 1 - Stories &middot; 24 Jun 2026 12:50</div></li><li><a href='https://www.motorsport.com/f1/news/ferrari-plots-f1-turbo-update-after-summer/10832819/?utm_source=RSS&amp;utm_medium=referral&amp;utm_campaign=RSS-F1&amp;utm_term=News&amp;utm_content=www' target='_blank' rel='noopener'>Ferrari set to follow Austria engine updates with new turbo after F1&#039;s summer break</a><div class='news-meta'>Motorsport.com - Formula 1 - Stories &middot; 24 Jun 2026 10:31</div></li><li><a href='https://www.autosport.com/f1/news/does-red-bulls-denial-that-racing-bulls-is-helping-it-on-track-stack-up/10832708/?utm_source=RSS&amp;utm_medium=referral&amp;utm_campaign=RSS-F1&amp;utm_term=News&amp;utm_content=uk' target='_blank' rel='noopener'>Does Red Bull’s denial that Racing Bulls is helping it on-track stack up?</a><div class='news-meta'>Autosport.com - Formula 1 - Stories &middot; 24 Jun 2026 08:10</div></li><li><a href='https://www.motorsport.com/f1/news/red-bull-team-boss-asked-to-analyse-racing-bulls-helping-claims-and-we-actually-did/10832698/?utm_source=RSS&amp;utm_medium=referral&amp;utm_campaign=RSS-F1&amp;utm_term=News&amp;utm_content=www' target='_blank' rel='noopener'>Red Bull denied claims Racing Bulls is helping – so we analysed their on-track battles</a><div class='news-meta'>Motorsport.com - Formula 1 - Stories &middot; 24 Jun 2026 08:07</div></li><li><a href='https://www.motorsport.com/f1/news/lando-norris-gets-first-look-at-madame-tussauds-waxwork-as-he-donates-race-suit/10832764/?utm_source=RSS&amp;utm_medium=referral&amp;utm_campaign=RSS-F1&amp;utm_term=News&amp;utm_content=www' target='_blank' rel='noopener'>Lando Norris gets first look at Madame Tussauds waxwork as he donates race suit</a><div class='news-meta'>Motorsport.com - Formula 1 - Stories &middot; 23 Jun 2026 23:11</div></li><li><a href='https://www.motorsport.com/f1/news/mclaren-f1-fans-praise-lovable-lando-norris-and-oscar-piastri-after-viral-video/10832631/?utm_source=RSS&amp;utm_medium=referral&amp;utm_campaign=RSS-F1&amp;utm_term=News&amp;utm_content=www' target='_blank' rel='noopener'>McLaren F1 fans praise &quot;lovable&quot; Lando Norris and Oscar Piastri after viral video</a><div class='news-meta'>Motorsport.com - Formula 1 - Stories &middot; 23 Jun 2026 22:41</div></li></ul>
     </section>
   </main>
 
   <footer>
     <p class="muted">
-      Live data: Jolpica/Ergast &middot; OpenF1 &middot; Open-Meteo &middot; F1 news RSS &middot;
-      Claude Sonnet 4.6 for news analysis. Predictions are model estimates, not betting advice.
+      Live data: Jolpica/Ergast &middot; OpenF1 &middot; Open-Meteo &middot; F1 news RSS.
+      Predictions are model estimates, not betting advice.
     </p>
   </footer>
 </body>
