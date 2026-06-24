@@ -43,14 +43,6 @@ def _fmt(n: float, d: int = 2) -> str:
     return f"{float(n):.{d}f}"
 
 
-def _factor_class(f: float) -> str:
-    if f > 0.05:
-        return "factor-pos"
-    if f < -0.05:
-        return "factor-neg"
-    return "factor-neutral"
-
-
 def _race_banner(race: dict) -> str:
     from datetime import date as dt_date
 
@@ -133,8 +125,6 @@ def _race_table(predictions: list[dict]) -> str:
         podium = {1: "podium-1", 2: "podium-2", 3: "podium-3"}.get(rank, "")
         win_pct = round(d.get("win_probability", 0) * 1000) / 10
         bar_w = (d.get("win_probability", 0) / max_prob) * 80
-        f = d.get("news_factor", 0)
-        fsign = "+" if f > 0 else ""
         rows.append(f"""
         <tr class="{podium}">
           <td class="rank">P{rank}</td>
@@ -142,7 +132,6 @@ def _race_table(predictions: list[dict]) -> str:
           <td class="driver-name">{_esc(d.get("driver_name",""))}</td>
           <td class="team-name">{_esc(d.get("constructor",""))}</td>
           <td class="win-prob">{win_pct}%<span class="win-prob-bar" style="width:{bar_w:.0f}px"></span></td>
-          <td class="factor {_factor_class(f)}">{fsign}{_fmt(f,2)}</td>
         </tr>""")
     return f"""
     <div class="table-scroll">
@@ -150,7 +139,7 @@ def _race_table(predictions: list[dict]) -> str:
       <thead>
         <tr>
           <th>Pos</th><th>Code</th><th>Driver</th><th>Team</th>
-          <th>Win prob</th><th class="col-factor">News factor</th>
+          <th>Win prob</th>
         </tr>
       </thead>
       <tbody>{"".join(rows)}</tbody>
@@ -159,9 +148,6 @@ def _race_table(predictions: list[dict]) -> str:
 
 
 def _news_section(news: dict, meta: dict, updated: str) -> str:
-    narrative = _esc(news.get("narrative") or "No narrative available.")
-    storylines = news.get("storylines") or []
-    sl_items = "".join(f"<li>{_esc(s)}</li>" for s in storylines) or "<li class='muted'>No major storylines detected.</li>"
     news_items = news.get("items") or []
     ni_items = []
     for n in news_items[:10]:
@@ -198,13 +184,6 @@ def _news_section(news: dict, meta: dict, updated: str) -> str:
     return f"""
     <p class="muted" id="model-meta">{meta_str}</p>
     <p class="muted update-time">Last updated: {_esc(updated)}</p>
-
-    <section class="card">
-      <h2>What's Driving the Prediction</h2>
-      <p class="narrative">{narrative}</p>
-      <h3>Key storylines</h3>
-      <ul id="storylines">{sl_items}</ul>
-    </section>
 
     <section class="card">
       <h2>Latest F1 News</h2>
@@ -285,8 +264,8 @@ def build_html(data: dict, updated: str) -> str:
 
   <footer>
     <p class="muted">
-      Live data: Jolpica/Ergast &middot; OpenF1 &middot; Open-Meteo &middot; F1 news RSS &middot;
-      Claude Sonnet 4.6 for news analysis. Predictions are model estimates, not betting advice.
+      Live data: Jolpica/Ergast &middot; OpenF1 &middot; Open-Meteo &middot; F1 news RSS.
+      Predictions are model estimates, not betting advice.
     </p>
   </footer>
 </body>

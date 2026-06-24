@@ -166,31 +166,29 @@ def rank_predictions(
 ) -> list[dict]:
     """Run the predictor and return a ranked list of {driver_id, predicted_position, win_prob, ...}.
 
-    Three post-hoc adjustments on top of the raw LightGBM output:
-      1. News factor: shift each driver's predicted position by -1.5 * factor
-         (Claude-derived signed [-1, 1] sentiment).
-      2. Practice pace: when OpenF1 has lap times from the current weekend's
+    Post-hoc adjustments on top of the raw LightGBM output:
+      1. Practice pace: when OpenF1 has lap times from the current weekend's
          practice sessions, blend the practice rank in at weight 0.45. This
          is the strongest real-world short-term pace signal.
-      3. Rookie/sparse-driver shrinkage: drivers with very few starts at
+      2. Rookie/sparse-driver shrinkage: drivers with very few starts at
          this circuit (track_starts < 2) get pulled 40% toward their team's
          median predicted position. Counteracts rookie blowup like a
          four-race-old driver suddenly leading at 70%.
 
-    Softmax temperature lowered from 1.2 to 0.55 — the old value produced
-    a 70% top-driver probability which is empirically too peaked.
+    Win probabilities come from a Monte Carlo over race outcomes (see
+    _simulate_outcomes), not a softmax over rank.
     """
     raw = predictor.predict(feature_df)
-    nudged = raw - 1.5 * feature_df["news_factor"].to_numpy()
+    nudged = raw.copy()
 
-    # 2) Practice-pace nudge
+    # 1) Practice-pace nudge
     if "practice_rank" in feature_df.columns:
         pr = feature_df["practice_rank"].to_numpy(dtype=float)
         mask = ~np.isnan(pr)
         if mask.any():
             nudged[mask] = 0.55 * nudged[mask] + 0.45 * pr[mask]
 
-    # 3) Bayesian shrinkage toward team median for sparse-history drivers
+    # 2) Bayesian shrinkage toward team median for sparse-history drivers
     if "track_starts" in feature_df.columns and "constructor_id" in feature_df.columns:
         df = feature_df.copy()
         df["_pred"] = nudged
@@ -199,7 +197,7 @@ def rank_predictions(
         shrink = np.where(starts < 2, 0.40, 0.0)
         nudged = (1 - shrink) * nudged + shrink * team_medians
 
-    # 4) Championship skill floor.
+    # 3) Championship skill floor.
     # Canada GP backtest: model predicted Verstappen P10 with 0% win prob;
     # actual result was P3. A top-5 championship driver shouldn't be
     # predicted to finish far down based on rolling form alone. Pull the
@@ -215,7 +213,7 @@ def rank_predictions(
         blend = np.where(dnf_rate > 0.4, 0.0, blend)
         nudged = (1 - blend) * nudged + blend * champ_pos
 
-    # 5) Grid anchor — once qualifying is done, starting position is the
+    # 4) Grid anchor — once qualifying is done, starting position is the
     # single strongest predictor of race finish (especially on street
     # circuits where overtaking is costly). Applied BEFORE form anchor so
     # both compete cleanly. Skipped pre-quali (qual_position there is just
@@ -233,7 +231,7 @@ def rank_predictions(
         grid_w = 0.30 + 0.15 * is_street
         nudged = (1.0 - grid_w) * nudged + grid_w * grid
 
-    # 6) Recent-form anchor (race path only — quali has its own dynamics).
+    # 5) Recent-form anchor (race path only — quali has its own dynamics).
     # See FORM_ANCHOR note above: the Thursday-snapshot baseline ordering is
     # too strong to override wholesale. Once real qualifying is in, drop the
     # weight sharply — grid is now doing the anchoring instead.
@@ -278,7 +276,6 @@ def rank_predictions(
                 "code": meta.get("code", did[:3].upper()),
                 "predicted_position": float(exp_pos[idx]),
                 "raw_model_position": float(raw[idx]),
-                "news_factor": float(row["news_factor"]),
                 "win_probability": float(win_probs[idx]),
             }
         )

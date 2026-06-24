@@ -1,7 +1,8 @@
 """End-to-end prediction pipeline.
 
-Pulls live data, runs news analysis, builds features, runs both models, and
-returns a structured payload ready for the API or CLI to render.
+Pulls live data, builds features, runs both models, and returns a structured
+payload ready for the API or CLI to render. Recent F1 headlines are fetched
+from RSS and shown for context, but no longer drive the prediction.
 
 Designed to be called for any specific race (defaults to the next upcoming).
 """
@@ -15,7 +16,7 @@ from typing import Any
 
 import pandas as pd
 
-from . import data_sources, features, models, news_analyzer, odds
+from . import data_sources, features, models, odds
 
 log = logging.getLogger(__name__)
 
@@ -85,7 +86,6 @@ def _heuristic_predictor(feature_df: pd.DataFrame, driver_meta: dict[str, dict])
         + 0.10 * feature_df["constructor_position"].fillna(10)
         + 0.05 * feature_df["driver_position"].fillna(10)
         + 0.20 * feature_df.get("qual_position", pd.Series([12.0] * n)).fillna(12)
-        - 1.5 * feature_df["news_factor"].fillna(0)
         - 0.6 * feature_df["momentum"].fillna(0)
         + dnf_weight * feature_df["dnf_rate_last5"].fillna(0)
     )
@@ -114,7 +114,6 @@ def _heuristic_predictor(feature_df: pd.DataFrame, driver_meta: dict[str, dict])
                 "code": meta.get("code", did[:3].upper()),
                 "predicted_position": float(scores.iloc[idx]),
                 "raw_model_position": float(scores.iloc[idx]),
-                "news_factor": float(row["news_factor"]),
                 "win_probability": float(win_probs[idx]),
             }
         )
@@ -128,7 +127,6 @@ def _heuristic_pole(feature_df: pd.DataFrame, driver_meta: dict[str, dict]) -> l
         + 0.25 * feature_df["track_avg_finish"].fillna(12)
         + 0.20 * feature_df["constructor_position"].fillna(10)
         + 0.10 * feature_df["driver_position"].fillna(10)
-        - 0.8 * feature_df["news_factor"].fillna(0)
     )
     df_with_score = feature_df.assign(__score__=scores)
     df_sorted = df_with_score.sort_values("__score__").reset_index(drop=True)
@@ -146,7 +144,6 @@ def _heuristic_pole(feature_df: pd.DataFrame, driver_meta: dict[str, dict]) -> l
                 "code": meta.get("code", did[:3].upper()),
                 "predicted_position": float(row["__score__"]),
                 "raw_model_position": float(row["__score__"]),
-                "news_factor": float(row["news_factor"]),
             }
         )
     return out
@@ -162,29 +159,13 @@ def _in_race_week(race: dict) -> bool:
     return (race_date - timedelta(days=6)) <= today <= race_date
 
 
-def _maybe_analyze_news(context: dict) -> dict:
-    """Run Claude news analysis only during race weeks; return neutral otherwise."""
-    if not _in_race_week(context.get("race") or {}):
-        log.info("Not a race week — skipping news analysis to save tokens")
-        return news_analyzer._neutral_response("News analysis runs during race weekends only.")
-    log.info("Race week detected — running news analysis via Claude")
-    return news_analyzer.analyze_news(
-        news=context["news"],
-        driver_standings=context["driver_standings"],
-        race=context["race"],
-    )
-
-
 def predict_next_race(use_models: bool = True) -> dict[str, Any]:
     """Build the full prediction payload for the next upcoming race."""
     log.info("Fetching live race context")
     context = data_sources.build_race_context()
 
-    analysis = _maybe_analyze_news(context)
-    factors = news_analyzer.factors_dict(analysis)
-
     log.info("Building feature frame")
-    feature_df = features.build_feature_frame(context, news_factors=factors)
+    feature_df = features.build_feature_frame(context)
     driver_meta = _driver_meta(context["driver_standings"])
 
     # ---- Betting-market signal (race week only — preserves API quota) ----
@@ -246,10 +227,7 @@ def predict_next_race(use_models: bool = True) -> dict[str, Any]:
         "pole_prediction": pole,
         "pole_predictions": pole_predictions[:5],
         "news": {
-            "narrative": analysis.get("race_narrative", ""),
-            "storylines": analysis.get("key_storylines", []),
             "items": context["news"][:10],
-            "driver_factors": analysis.get("driver_factors", []),
         },
         "meta": {
             "race_model": race_model_used,

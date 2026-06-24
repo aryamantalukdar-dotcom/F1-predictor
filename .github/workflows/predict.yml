@@ -32,7 +32,6 @@ jobs:
 
       - name: Generate static prediction page
         env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
         run: python -m scripts.generate_static --out docs/index.html
 

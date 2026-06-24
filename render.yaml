@@ -7,7 +7,5 @@ services:
     healthCheckPath: /api/health
     autoDeploy: true
     envVars:
-      - key: ANTHROPIC_API_KEY
-        sync: false
       - key: PORT
         value: 8000

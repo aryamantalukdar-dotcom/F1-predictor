@@ -6,7 +6,6 @@ Each feature row represents a (driver, race) pairing. Features blend:
   - constructor strength (current championship position + recent results)
   - weather forecast for race weekend
   - track-type signals (street circuit, high-downforce, etc.)
-  - news-derived adjustments produced by the Claude analyzer
 
 The shape returned here is consumed by both the training pipeline and the
 live prediction path, so they stay in lockstep.
@@ -68,9 +67,6 @@ class FeatureRow:
     is_high_downforce: int
     is_power_circuit: int
 
-    # News signal (filled in later by news_analyzer)
-    news_factor: float = 0.0
-
     # Optional: qualifying result, used for race model when available
     qual_position: float = np.nan
 
@@ -121,11 +117,10 @@ def _track_history(circuit_history: pd.DataFrame, driver_id: str) -> tuple[float
     return float(pos.mean()), float(pos.min()), len(rows)
 
 
-def build_feature_frame(context: dict, news_factors: dict[str, float] | None = None) -> pd.DataFrame:
+def build_feature_frame(context: dict) -> pd.DataFrame:
     """Build feature rows for every driver in the upcoming race.
 
     `context` is the dict returned by data_sources.build_race_context().
-    `news_factors` maps driver_id -> [-1, +1] signed adjustment from the LLM.
     """
     race = context["race"]
     weather = context["weather"]
@@ -136,7 +131,6 @@ def build_feature_frame(context: dict, news_factors: dict[str, float] | None = N
     season_sprints = context.get("season_sprints", pd.DataFrame())
     practice_pace = context.get("practice_pace", pd.DataFrame())
     circuit_history = context["circuit_history"]
-    news_factors = news_factors or {}
 
     # Build a {driver_code: practice_rank} from OpenF1 practice pace.
     # Rank 1 = fastest best-lap. Drivers without practice data stay NaN and
@@ -214,7 +208,6 @@ def build_feature_frame(context: dict, news_factors: dict[str, float] | None = N
                 is_street=is_street,
                 is_high_downforce=is_hd,
                 is_power_circuit=is_power,
-                news_factor=float(news_factors.get(driver_id, 0.0)),
                 qual_position=float(latest_qual) if pd.notna(latest_qual) else np.nan,
                 practice_rank=practice_rank_by_code.get(d.get("code", "").upper(), np.nan),
             )
@@ -345,10 +338,10 @@ def build_training_frame(seasons: list[int], data_sources_module) -> pd.DataFram
 def feature_columns(include_qual: bool = True) -> list[str]:
     """Model feature list, shared by training and inference.
 
-    Weather and news_factor are intentionally NOT here: they can't be
-    reconstructed historically, so as trained features they'd be constant
-    zeros that LightGBM ignores. They act as post-hoc adjustments in
-    models.rank_predictions / the heuristic instead.
+    Weather is intentionally NOT here: it can't be reconstructed historically,
+    so as a trained feature it'd be constant zeros that LightGBM ignores. It
+    acts as a post-hoc adjustment in models.rank_predictions / the heuristic
+    instead.
     """
     cols = [
         "avg_finish_last3",

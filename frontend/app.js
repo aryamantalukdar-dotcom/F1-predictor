@@ -98,12 +98,6 @@ function renderPole(pole, polePredictions) {
   `;
 }
 
-function factorClass(f) {
-  if (f > 0.05) return "factor-pos";
-  if (f < -0.05) return "factor-neg";
-  return "factor-neutral";
-}
-
 function renderRaceTable(predictions) {
   const wrap = $("#race-table-wrap");
   if (!predictions || !predictions.length) {
@@ -123,8 +117,6 @@ function renderRaceTable(predictions) {
               : "";
       const winPct = Math.round(d.win_probability * 1000) / 10;
       const barWidth = (d.win_probability / maxProb) * 80;
-      const f = d.news_factor;
-      const fSign = f > 0 ? "+" : "";
       return `
         <tr class="${podiumClass}">
           <td class="rank">P${d.rank}</td>
@@ -134,7 +126,6 @@ function renderRaceTable(predictions) {
           <td class="win-prob">
             ${winPct}%<span class="win-prob-bar" style="width:${barWidth}px"></span>
           </td>
-          <td class="factor ${factorClass(f)}">${fSign}${fmt(f, 2)}</td>
         </tr>
       `;
     })
@@ -149,7 +140,6 @@ function renderRaceTable(predictions) {
           <th>Driver</th>
           <th>Team</th>
           <th>Win prob</th>
-          <th class="col-factor">News factor</th>
         </tr>
       </thead>
       <tbody>${rows}</tbody>
@@ -159,13 +149,6 @@ function renderRaceTable(predictions) {
 }
 
 function renderNews(news, meta) {
-  $("#narrative").textContent = news.narrative || "No narrative available.";
-
-  const storylines = news.storylines || [];
-  $("#storylines").innerHTML = storylines.length
-    ? storylines.map((s) => `<li>${escapeHtml(s)}</li>`).join("")
-    : "<li class='muted'>No major storylines detected in the last few days.</li>";
-
   const items = news.items || [];
   $("#news-list").innerHTML = items.length
     ? items

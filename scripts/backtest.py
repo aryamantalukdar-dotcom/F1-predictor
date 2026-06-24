@@ -84,7 +84,6 @@ def main() -> int:
     if frame.empty:
         print("FATAL: no data")
         return 1
-    frame["news_factor"] = 0.0  # Thursday snapshot: no news/practice/odds
     frame = frame.sort_values(["season", "round"]).reset_index(drop=True)
 
     races = (

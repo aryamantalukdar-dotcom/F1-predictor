@@ -1,7 +1,7 @@
 # F1 Predictor
 
-A live F1 race-prediction app that combines multiple data feeds, an ensemble
-ML model, and Claude-powered news analysis to predict:
+A live F1 race-prediction app that combines multiple data feeds and an
+ensemble ML model to predict:
 
 1. **The order of driver finishes** for the upcoming Grand Prix.
 2. **The pole-sitter** for qualifying.
@@ -18,9 +18,9 @@ up to race weekend.
 | Track-specific historical performance | 5 seasons rolled up from Jolpica |
 | Live timing / latest session metadata | [OpenF1](https://openf1.org) |
 | Race-day weather forecast | [Open-Meteo](https://open-meteo.com) (no API key required) |
-| Latest F1 news | RSS aggregation: Autosport, Motorsport.com, Formula1.com, BBC F1 |
-| News-derived per-driver impact factors | Claude Opus 4.7 (adaptive thinking + structured outputs) |
+| Latest F1 news (context only) | RSS aggregation: Autosport, Motorsport.com, Formula1.com, BBC F1 |
 | Recent form, momentum, DNF rate | Computed rolling features |
+| Practice pace, betting odds, qualifying grid | OpenF1 / odds API / Jolpica (post-hoc nudges) |
 
 ## Architecture
 
@@ -35,17 +35,11 @@ up to race weekend.
 │              backend/data_sources.py                │
 └──────────────────────┬──────────────────────────────┘
                        │
-        ┌──────────────┼──────────────┐
-        ▼              ▼              ▼
-┌──────────────┐  ┌──────────┐  ┌──────────────────┐
-│  features.py │  │ news_    │  │ Claude Opus 4.7  │
-│  (rolling +  │  │ analyzer │──▶ (adaptive think, │
-│  per-track)  │  │   .py    │  │  structured out) │
-└──────┬───────┘  └────┬─────┘  └──────────────────┘
-       │               │
-       │       per-driver factors
-       │               │
-       ▼               ▼
+                       ▼
+┌─────────────────────────────────────────────────────┐
+│   features.py — rolling form + per-track history    │
+└──────────────────────┬──────────────────────────────┘
+                       ▼
 ┌─────────────────────────────────────────────────────┐
 │   models.py — LightGBM race + pole predictors       │
 │   (with heuristic fallback before training)         │
@@ -54,6 +48,8 @@ up to race weekend.
                 ┌──────────────┐
                 │   app.py     │  FastAPI + static frontend
                 └──────────────┘
+
+News RSS headlines are displayed for context only — they do not feed the model.
 ```
 
 ## Quick start
@@ -65,16 +61,7 @@ python -m venv .venv && source .venv/bin/activate
 pip install -r backend/requirements.txt
 ```
 
-### 2. (Optional but recommended) Set your Anthropic API key
-
-```bash
-export ANTHROPIC_API_KEY=sk-ant-...
-```
-
-Without this, the news-analysis step is skipped and predictions still run on
-ML signals alone.
-
-### 3. Run predictions immediately
+### 2. Run predictions immediately
 
 A heuristic baseline ships with the repo, so you can predict on day one:
 
@@ -89,7 +76,7 @@ uvicorn backend.app:app --host 0.0.0.0 --port 8000
 # open http://localhost:8000
 ```
 
-### 4. Train the real models (recommended, takes a few minutes)
+### 3. Train the real models (recommended, takes a few minutes)
 
 ```bash
 python -m backend.train --seasons 2021 2022 2023 2024 2025
@@ -113,21 +100,18 @@ them to `models_cache/`. The next prediction will use them automatically.
 1. **Identify the next race** from the Jolpica season schedule.
 2. **Fetch live signals**: standings, recent results, qualifying, circuit
    history (5 seasons back), Open-Meteo race-day forecast, latest news RSS.
-3. **News analysis**: Claude reads the news + grid context and emits a
-   structured `{driver_id: factor_in_[-1, +1]}` map. The system prompt is
-   marked for prompt caching, so repeated calls during a race weekend are
-   cheap.
-4. **Feature engineering**: rolling avg-finish (last 3, last 5), DNF rate,
+3. **Feature engineering**: rolling avg-finish (last 3, last 5), DNF rate,
    form momentum (negative slope of recent positions), per-track history,
-   constructor strength, championship state, weather, news factor, and a
-   handful of track-type categoricals.
-5. **Race + pole models**: two LightGBM regressors trained on historical
+   constructor strength, championship state, weather, and a handful of
+   track-type categoricals.
+4. **Race + pole models**: two LightGBM regressors trained on historical
    seasons predict expected race position and qualifying position
-   respectively. Predictions are ranked and converted to softmax win
-   probabilities.
-6. **News nudge**: each driver's predicted position is shifted by
-   `-1.5 × news_factor`, so a +0.5 factor is worth roughly three-quarters of
-   a place.
+   respectively. Predictions are ranked, with post-hoc nudges from practice
+   pace, betting odds, and (after Saturday) the real qualifying grid, then
+   converted to Monte Carlo win probabilities.
+
+The latest F1 headlines are fetched from RSS and shown on the page for
+context, but they don't feed the prediction.
 
 ## Project layout
 
@@ -136,7 +120,6 @@ F1-predictor/
 ├── backend/
 │   ├── data_sources.py     # All live API integrations
 │   ├── features.py         # Feature engineering (training + inference)
-│   ├── news_analyzer.py    # Claude API news → structured factors
 │   ├── models.py           # LightGBM race + pole predictors
 │   ├── predict.py          # End-to-end pipeline orchestrator
 │   ├── train.py            # Training entry point
@@ -164,9 +147,7 @@ Pick whichever you prefer — each gives you a permanent `https://...` URL.
    already has all deploy configs).
 2. Go to https://render.com → **New** → **Blueprint** → connect the repo.
    Render reads `render.yaml` and provisions a free Docker web service.
-3. In the service's **Environment** tab, add `ANTHROPIC_API_KEY` (optional —
-   without it the app still runs, just without news-derived factors).
-4. First deploy takes ~5 min. You'll get a URL like
+3. First deploy takes ~5 min. You'll get a URL like
    `https://f1-predictor-xxxx.onrender.com`. The health check at
    `/api/health` keeps the service warm.
 
@@ -183,7 +164,6 @@ fly auth signup   # or: fly auth login
 
 # from the repo root
 fly launch --no-deploy --copy-config --name f1-predictor
-fly secrets set ANTHROPIC_API_KEY=sk-ant-...   # optional
 fly deploy
 ```
 
@@ -194,13 +174,13 @@ want zero cold starts.
 ### Option C — Railway
 
 Click **New Project → Deploy from GitHub** and pick the repo. Railway reads
-`railway.toml` automatically. Add `ANTHROPIC_API_KEY` in the Variables tab.
+`railway.toml` automatically.
 
 ### Option D — Any Docker host
 
 ```bash
 docker build -t f1-predictor .
-docker run -p 8000:8000 -e ANTHROPIC_API_KEY=sk-ant-... f1-predictor
+docker run -p 8000:8000 f1-predictor
 ```
 
 Works on Google Cloud Run, AWS App Runner, Azure Container Apps, etc.

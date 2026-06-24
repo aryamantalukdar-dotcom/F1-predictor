@@ -31,21 +31,19 @@ def main() -> int:
         print(f"\n  POLE PREDICTION → P1: {pole['driver_name']} ({pole['constructor']})")
 
     print("\n  PREDICTED FINISHING ORDER:")
-    print("  Pos  Code  Driver                    Team                      Win%   News")
-    print("  " + "-" * 78)
+    print("  Pos  Code  Driver                    Team                      Win%")
+    print("  " + "-" * 72)
     for d in p["race_predictions"]:
         print(
             f"  P{d['rank']:<3} {d['code']:<5} {d['driver_name'][:24]:<24}  "
-            f"{d['constructor'][:24]:<24}  {d['win_probability']*100:>5.1f}%  "
-            f"{d['news_factor']:+.2f}"
+            f"{d['constructor'][:24]:<24}  {d['win_probability']*100:>5.1f}%"
         )
 
-    if p["news"].get("narrative"):
-        print(f"\n  NARRATIVE: {p['news']['narrative']}")
-    if p["news"].get("storylines"):
-        print("\n  STORYLINES:")
-        for s in p["news"]["storylines"]:
-            print(f"    - {s}")
+    items = p["news"].get("items") or []
+    if items:
+        print("\n  LATEST F1 NEWS:")
+        for n in items[:5]:
+            print(f"    - {n.get('title', '')}")
     print()
     return 0
 

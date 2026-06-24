@@ -322,24 +322,6 @@ td.win-prob {
   font-variant-numeric: tabular-nums;
 }
 
-td.factor {
-  width: 90px;
-  text-align: right;
-  font-variant-numeric: tabular-nums;
-}
-
-.factor-pos {
-  color: var(--good);
-  font-weight: 600;
-}
-.factor-neg {
-  color: var(--bad);
-  font-weight: 600;
-}
-.factor-neutral {
-  color: var(--text-dim);
-}
-
 .podium-1 td.rank {
   color: var(--pole-gold);
 }
@@ -360,30 +342,10 @@ td.factor {
 }
 
 /* News */
-.narrative {
-  font-size: 1rem;
-  line-height: 1.6;
-  color: var(--text);
-}
-
-#storylines,
 #news-list {
   list-style: none;
   padding: 0;
   margin: 0;
-}
-
-#storylines li {
-  padding: 6px 0 6px 18px;
-  position: relative;
-  color: var(--text);
-}
-
-#storylines li::before {
-  content: "→";
-  position: absolute;
-  left: 0;
-  color: var(--accent);
 }
 
 #news-list li {
@@ -491,9 +453,6 @@ footer {
   td.win-prob {
     width: 78px;
   }
-  td.factor {
-    width: 60px;
-  }
   .win-prob-bar {
     display: none; /* Hide bar on phone — text remains */
   }
@@ -501,11 +460,6 @@ footer {
 
 /* ---------- Very narrow phones (<= 420px) ---------- */
 @media (max-width: 420px) {
-  /* Hide news factor column entirely on tiny screens */
-  th.col-factor,
-  td.factor {
-    display: none;
-  }
   table {
     min-width: 360px;
   }
